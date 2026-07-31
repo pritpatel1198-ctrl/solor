@@ -65,14 +65,18 @@ const Router = {
 
     appState.setState({ currentView: route });
 
+    const bottomNav = document.getElementById('mobile-bottom-nav');
+
     // Show/Hide Layout Chrome for Auth page vs Application pages
     if (route === 'auth') {
       if (sidebar) sidebar.style.display = 'none';
       if (header) header.style.display = 'none';
+      if (bottomNav) bottomNav.style.display = 'none';
       contentArea.style.padding = '0';
     } else {
-      if (sidebar) sidebar.style.display = 'flex';
+      if (sidebar) sidebar.style.display = '';
       if (header) header.style.display = 'flex';
+      if (bottomNav) bottomNav.style.display = '';
       contentArea.style.padding = '';
     }
 

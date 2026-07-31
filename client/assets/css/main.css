@@ -25,7 +25,7 @@ a {
 
 button, input, select, textarea {
   font-family: inherit;
-  font-size: inherit;
+  font-size: 16px; /* Prevents auto-zoom on iOS mobile browsers */
 }
 
 #app-container {
@@ -225,7 +225,47 @@ button, input, select, textarea {
   flex: 1;
 }
 
-/* Responsive Rules */
+/* Mobile Bottom Navigation Bar */
+.mobile-bottom-nav {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 64px;
+  background-color: var(--bg-surface);
+  border-top: 1px solid var(--border-color);
+  z-index: 50;
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.06);
+}
+
+.mobile-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  flex: 1;
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  font-weight: 500;
+  padding: 6px 0;
+  border-radius: 0;
+}
+
+.mobile-nav-item i {
+  width: 22px;
+  height: 22px;
+}
+
+.mobile-nav-item.active {
+  color: var(--primary-600);
+  background: transparent;
+  box-shadow: none;
+  font-weight: 700;
+}
+
+/* Responsive Mobile Rules */
 @media (max-width: 992px) {
   .sidebar {
     position: fixed;
@@ -248,6 +288,11 @@ button, input, select, textarea {
   }
 
   .content-body {
-    padding: 20px 16px;
+    padding: 16px;
+    padding-bottom: 84px; /* Clearance for mobile bottom nav bar */
+  }
+
+  .mobile-bottom-nav {
+    display: flex;
   }
 }

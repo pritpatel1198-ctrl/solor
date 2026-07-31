@@ -5,14 +5,14 @@ class StateStore {
   constructor() {
     this.state = {
       user: null,
-      token: localStorage.getItem('solar_auth_token') || 'demo-token',
+      token: localStorage.getItem('solar_auth_token') || null,
       settings: {
         default_buying_rate: 2.00,
         default_selling_rate: 7.00,
         currency: '₹',
         theme: 'light'
       },
-      currentView: 'dashboard',
+      currentView: 'auth',
       theme: localStorage.getItem('solar_theme') || 'light'
     };
     this.listeners = [];

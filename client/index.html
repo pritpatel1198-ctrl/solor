@@ -2,7 +2,7 @@
 <html lang="en" data-theme="light">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="description" content="Solar Revenue Tracker - Enterprise Web Application for rooftop solar daily generation, grid consumption, financial revenue and net profit analytics.">
   <title>Solar Revenue Tracker - Enterprise SaaS</title>
 
@@ -28,7 +28,7 @@
 </head>
 <body>
   <div id="app-container">
-    <!-- Sidebar Navigation -->
+    <!-- Sidebar Navigation (Desktop / Tablet Drawer) -->
     <aside id="sidebar" class="sidebar">
       <div class="sidebar-header">
         <div class="brand-icon"><i data-lucide="sun"></i></div>
@@ -84,7 +84,7 @@
       <!-- Top Sticky Header -->
       <header id="top-header" class="top-header">
         <div class="header-left">
-          <button id="mobile-menu-toggle" class="mobile-menu-btn">
+          <button id="mobile-menu-toggle" class="mobile-menu-btn" title="Open Navigation Menu">
             <i data-lucide="menu"></i>
           </button>
           <div class="header-title-section">
@@ -98,7 +98,7 @@
           </button>
 
           <div class="user-profile-badge">
-            <div id="header-user-avatar" class="user-avatar">D</div>
+            <div id="header-user-avatar" class="user-avatar">P</div>
             <span id="header-user-email" class="user-email">Prit@solar.com</span>
           </div>
         </div>
@@ -108,6 +108,30 @@
       <main id="content-area" class="content-body">
         <!-- Dynamic view content rendered by Router -->
       </main>
+
+      <!-- Mobile Bottom Navigation Bar (App-like feel for smartphones) -->
+      <nav id="mobile-bottom-nav" class="mobile-bottom-nav">
+        <a href="#dashboard" class="mobile-nav-item nav-item active" data-route="dashboard">
+          <i data-lucide="layout-dashboard"></i>
+          <span>Home</span>
+        </a>
+        <a href="#entry" class="mobile-nav-item nav-item" data-route="entry">
+          <i data-lucide="plus-circle"></i>
+          <span>Add</span>
+        </a>
+        <a href="#history" class="mobile-nav-item nav-item" data-route="history">
+          <i data-lucide="file-text"></i>
+          <span>History</span>
+        </a>
+        <a href="#reports" class="mobile-nav-item nav-item" data-route="reports">
+          <i data-lucide="bar-chart-3"></i>
+          <span>Reports</span>
+        </a>
+        <a href="#settings" class="mobile-nav-item nav-item" data-route="settings">
+          <i data-lucide="settings"></i>
+          <span>Settings</span>
+        </a>
+      </nav>
     </div>
   </div>
 
@@ -136,17 +160,12 @@
   <!-- App Bootstrap -->
   <script>
     document.addEventListener('DOMContentLoaded', async () => {
-      // Init Icons
       if (window.lucide) lucide.createIcons();
 
-      // Init Toast & Modal
       Toast.init();
       Modal.init();
-
-      // Init Auth
       Auth.init();
 
-      // Top Header Theme Toggle Button
       const themeBtn = document.getElementById('header-theme-toggle');
 
       function updateThemeIcon(theme) {
@@ -156,12 +175,10 @@
         if (window.lucide) lucide.createIcons();
       }
 
-      // Theme sync
       const savedTheme = localStorage.getItem('solar_theme') || 'light';
       document.documentElement.setAttribute('data-theme', savedTheme);
       updateThemeIcon(savedTheme);
 
-      // Mobile Menu Toggle
       const mobileBtn = document.getElementById('mobile-menu-toggle');
       if (mobileBtn) {
         mobileBtn.onclick = () => {
@@ -180,7 +197,6 @@
         };
       }
 
-      // App State Listener to update Header User profile
       appState.subscribe(state => {
         const userEmailEl = document.getElementById('header-user-email');
         const userAvatarEl = document.getElementById('header-user-avatar');
@@ -190,17 +206,13 @@
         }
       });
 
-      // Fetch User Settings on load
       try {
         const settingsRes = await API.getSettings();
         if (settingsRes && settingsRes.data) {
           appState.setState({ settings: settingsRes.data });
         }
-      } catch (e) {
-        // Fallback default settings
-      }
+      } catch (e) {}
 
-      // Init Router
       Router.init();
       Router.handleLocation();
     });
