@@ -13,7 +13,7 @@ const SettingsView = {
         <p style="color: var(--text-secondary); font-size: 0.9rem;">Configure solar electricity buying/selling rates, currency symbol, display theme, and data backups.</p>
       </div>
 
-      <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px;">
+      <div class="settings-grid">
         <!-- Tariff & Preferences Card -->
         <div class="card">
           <div class="card-header">

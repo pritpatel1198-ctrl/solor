@@ -11,7 +11,7 @@ const AnalyticsView = {
         <p style="color: var(--text-secondary); font-size: 0.9rem;">Interactive Chart.js visualizations for trend analysis and revenue comparison.</p>
       </div>
 
-      <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px;">
+      <div class="analytics-grid">
         <!-- 1. Daily Generation vs Consumption -->
         <div class="card" style="grid-column: span 2;">
           <div class="card-header">

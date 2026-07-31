@@ -24,7 +24,7 @@ const EntryView = {
         </div>
         <div class="card-body">
           <form id="daily-entry-form">
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <div class="entry-form-grid">
               <div class="form-group" style="grid-column: span 2;">
                 <label class="form-label" for="entry-date">Reading Date</label>
                 <input type="date" id="entry-date" class="form-control" value="${todayStr}" required />
