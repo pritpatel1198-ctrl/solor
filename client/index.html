@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Solar Revenue Tracker - Enterprise Web Application for rooftop solar daily generation, grid consumption, financial revenue and net profit analytics.">
+  <title>Solar Revenue Tracker - Enterprise SaaS</title>
+
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Supabase JS Client -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- Application Styles -->
+  <link rel="stylesheet" href="assets/css/variables.css">
+  <link rel="stylesheet" href="assets/css/main.css">
+  <link rel="stylesheet" href="assets/css/components.css">
+  <link rel="stylesheet" href="assets/css/views.css">
+</head>
+<body>
+  <div id="app-container">
+    <!-- Sidebar Navigation -->
+    <aside id="sidebar" class="sidebar">
+      <div class="sidebar-header">
+        <div class="brand-icon"><i data-lucide="sun"></i></div>
+        <span class="brand-title">Solar Revenue</span>
+      </div>
+
+      <nav class="sidebar-nav">
+        <a href="#dashboard" class="nav-item active" data-route="dashboard">
+          <i data-lucide="layout-dashboard"></i>
+          <span>Dashboard</span>
+        </a>
+
+        <a href="#entry" class="nav-item" data-route="entry">
+          <i data-lucide="plus-circle"></i>
+          <span>Daily Entry</span>
+        </a>
+
+        <a href="#history" class="nav-item" data-route="history">
+          <i data-lucide="file-text"></i>
+          <span>History</span>
+        </a>
+
+        <a href="#reports" class="nav-item" data-route="reports">
+          <i data-lucide="bar-chart-3"></i>
+          <span>Reports</span>
+        </a>
+
+        <a href="#analytics" class="nav-item" data-route="analytics">
+          <i data-lucide="pie-chart"></i>
+          <span>Analytics</span>
+        </a>
+
+        <a href="#calendar" class="nav-item" data-route="calendar">
+          <i data-lucide="calendar"></i>
+          <span>Calendar</span>
+        </a>
+
+        <a href="#settings" class="nav-item" data-route="settings">
+          <i data-lucide="settings"></i>
+          <span>Settings</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div style="font-size: 0.78rem; color: #64748b; text-align: center;">
+          Solar Revenue Tracker v1.0 Enterprise
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <div class="main-wrapper">
+      <!-- Top Sticky Header -->
+      <header id="top-header" class="top-header">
+        <div class="header-left">
+          <button id="mobile-menu-toggle" class="mobile-menu-btn">
+            <i data-lucide="menu"></i>
+          </button>
+          <div class="header-title-section">
+            <h1 id="header-view-title">Dashboard</h1>
+          </div>
+        </div>
+
+        <div class="header-right">
+          <button id="header-theme-toggle" class="theme-toggle-btn" title="Toggle Dark/Light Mode">
+            <i data-lucide="moon"></i>
+          </button>
+
+          <div class="user-profile-badge">
+            <div id="header-user-avatar" class="user-avatar">D</div>
+            <span id="header-user-email" class="user-email">Prit@solar.com</span>
+          </div>
+        </div>
+      </header>
+
+      <!-- View Content Body -->
+      <main id="content-area" class="content-body">
+        <!-- Dynamic view content rendered by Router -->
+      </main>
+    </div>
+  </div>
+
+  <!-- JS Dependencies & Modules -->
+  <script src="assets/js/config.js"></script>
+  <script src="assets/js/state.js"></script>
+  <script src="assets/js/components/toast.js"></script>
+  <script src="assets/js/components/modal.js"></script>
+  <script src="assets/js/components/skeleton.js"></script>
+  <script src="assets/js/api.js"></script>
+  <script src="assets/js/auth.js"></script>
+
+  <!-- Views -->
+  <script src="assets/js/views/authView.js"></script>
+  <script src="assets/js/views/dashboardView.js"></script>
+  <script src="assets/js/views/entryView.js"></script>
+  <script src="assets/js/views/historyView.js"></script>
+  <script src="assets/js/views/reportsView.js"></script>
+  <script src="assets/js/views/analyticsView.js"></script>
+  <script src="assets/js/views/calendarView.js"></script>
+  <script src="assets/js/views/settingsView.js"></script>
+
+  <!-- Router Initialization -->
+  <script src="assets/js/router.js"></script>
+
+  <!-- App Bootstrap -->
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      // Init Icons
+      if (window.lucide) lucide.createIcons();
+
+      // Init Toast & Modal
+      Toast.init();
+      Modal.init();
+
+      // Init Auth
+      Auth.init();
+
+      // Top Header Theme Toggle Button
+      const themeBtn = document.getElementById('header-theme-toggle');
+
+      function updateThemeIcon(theme) {
+        const btn = themeBtn || document.getElementById('header-theme-toggle');
+        if (!btn) return;
+        btn.innerHTML = theme === 'dark' ? '<i data-lucide="sun"></i>' : '<i data-lucide="moon"></i>';
+        if (window.lucide) lucide.createIcons();
+      }
+
+      // Theme sync
+      const savedTheme = localStorage.getItem('solar_theme') || 'light';
+      document.documentElement.setAttribute('data-theme', savedTheme);
+      updateThemeIcon(savedTheme);
+
+      // Mobile Menu Toggle
+      const mobileBtn = document.getElementById('mobile-menu-toggle');
+      if (mobileBtn) {
+        mobileBtn.onclick = () => {
+          document.getElementById('sidebar').classList.toggle('mobile-open');
+        };
+      }
+
+      if (themeBtn) {
+        themeBtn.onclick = () => {
+          const current = document.documentElement.getAttribute('data-theme');
+          const next = current === 'dark' ? 'light' : 'dark';
+          document.documentElement.setAttribute('data-theme', next);
+          localStorage.setItem('solar_theme', next);
+          appState.setState({ theme: next });
+          updateThemeIcon(next);
+        };
+      }
+
+      // App State Listener to update Header User profile
+      appState.subscribe(state => {
+        const userEmailEl = document.getElementById('header-user-email');
+        const userAvatarEl = document.getElementById('header-user-avatar');
+        if (state.user && state.user.email) {
+          if (userEmailEl) userEmailEl.textContent = state.user.email;
+          if (userAvatarEl) userAvatarEl.textContent = state.user.email.charAt(0).toUpperCase();
+        }
+      });
+
+      // Fetch User Settings on load
+      try {
+        const settingsRes = await API.getSettings();
+        if (settingsRes && settingsRes.data) {
+          appState.setState({ settings: settingsRes.data });
+        }
+      } catch (e) {
+        // Fallback default settings
+      }
+
+      // Init Router
+      Router.init();
+      Router.handleLocation();
+    });
+  </script>
+</body>
+</html>

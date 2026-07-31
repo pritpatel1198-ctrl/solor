@@ -1,0 +1,401 @@
+/* ===================================================
+   SaaS UI Design Components (Stripe/Vercel standard)
+   =================================================== */
+
+/* 1. Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 9px 18px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+  user-select: none;
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background-color: var(--primary-600);
+  color: #ffffff;
+  box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
+}
+
+.btn-primary:hover:not(:disabled) {
+  background-color: var(--primary-700);
+  box-shadow: 0 4px 8px rgba(37, 99, 235, 0.3);
+}
+
+.btn-secondary {
+  background-color: var(--bg-subtle);
+  color: var(--text-primary);
+  border-color: var(--border-color);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background-color: var(--bg-surface-hover);
+  border-color: var(--border-color-hover);
+}
+
+.btn-danger {
+  background-color: var(--danger-600);
+  color: #ffffff;
+  box-shadow: 0 2px 4px rgba(220, 38, 38, 0.2);
+}
+
+.btn-danger:hover:not(:disabled) {
+  background-color: #b91c1c;
+}
+
+.btn-outline {
+  background-color: transparent;
+  color: var(--text-secondary);
+  border-color: var(--border-color);
+}
+
+.btn-outline:hover:not(:disabled) {
+  background-color: var(--bg-subtle);
+  color: var(--text-primary);
+}
+
+.btn-sm {
+  padding: 6px 12px;
+  font-size: 0.82rem;
+  border-radius: var(--radius-sm);
+}
+
+.btn-icon {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border-radius: var(--radius-md);
+}
+
+/* 2. Cards */
+.card {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow var(--transition-fast), border-color var(--transition-fast);
+}
+
+.card:hover {
+  box-shadow: var(--shadow-md);
+}
+
+.card-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.card-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-primary);
+
+}
+
+.card-body {
+  padding: 24px;
+}
+
+/* KPI Card Special Styling */
+.kpi-card {
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  position: relative;
+  overflow: hidden;
+}
+
+.kpi-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.kpi-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+.kpi-icon-wrapper {
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--primary-50);
+  color: var(--primary-600);
+}
+
+.kpi-value {
+  font-size: 1.85rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+.kpi-footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+}
+
+.trend-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 600;
+  font-size: 0.8rem;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+}
+
+.trend-up {
+  background-color: var(--success-50);
+  color: var(--success-600);
+}
+
+.trend-down {
+  background-color: var(--danger-50);
+  color: var(--danger-600);
+}
+
+/* 3. Badges */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  border-radius: var(--radius-full);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.badge-profit {
+  background-color: var(--success-50);
+  color: var(--success-text);
+  border: 1px solid var(--success-100);
+}
+
+.badge-loss {
+  background-color: var(--danger-50);
+  color: var(--danger-text);
+  border: 1px solid var(--danger-100);
+}
+
+.badge-balanced {
+  background-color: var(--primary-50);
+  color: var(--primary-700);
+  border: 1px solid var(--primary-100);
+}
+
+/* 4. Form Controls */
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 20px;
+}
+
+.form-label {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.form-control, .form-select {
+  width: 100%;
+  padding: 10px 14px;
+  font-size: 0.92rem;
+  background-color: var(--bg-surface);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.form-control:focus, .form-select:focus {
+  outline: none;
+  border-color: var(--primary-500);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+/* 5. Data Tables */
+.table-container {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.9rem;
+}
+
+.data-table th {
+  padding: 14px 18px;
+  background-color: var(--bg-subtle);
+  color: var(--text-secondary);
+  font-weight: 600;
+  border-bottom: 1px solid var(--border-color);
+  white-space: nowrap;
+}
+
+.data-table td {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+.data-table tbody tr:hover {
+  background-color: var(--bg-surface-hover);
+}
+
+/* 6. Modal */
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity var(--transition-fast);
+}
+
+.modal-backdrop.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+.modal-content {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  width: 100%;
+  max-width: 540px;
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  transform: translateY(20px);
+  transition: transform var(--transition-fast);
+}
+
+.modal-backdrop.active .modal-content {
+  transform: translateY(0);
+}
+
+.modal-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.modal-body {
+  padding: 24px;
+  max-height: 75vh;
+  overflow-y: auto;
+}
+
+.modal-footer {
+  padding: 16px 24px;
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  background-color: var(--bg-subtle);
+}
+
+/* 7. Toast Notifications */
+.toast-container {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 110;
+}
+
+.toast {
+  padding: 14px 20px;
+  border-radius: var(--radius-md);
+  background-color: var(--bg-surface);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  animation: slideInRight 0.3s ease;
+  min-width: 280px;
+}
+
+.toast-success {
+  border-left: 4px solid var(--success-500);
+}
+
+.toast-error {
+  border-left: 4px solid var(--danger-500);
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* 8. Skeletons */
+.skeleton {
+  background: linear-gradient(90deg, var(--bg-subtle) 25%, var(--border-color) 50%, var(--bg-subtle) 75%);
+  background-size: 200% 100%;
+  animation: skeletonLoading 1.5s infinite;
+  border-radius: var(--radius-sm);
+}
+
+@keyframes skeletonLoading {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
