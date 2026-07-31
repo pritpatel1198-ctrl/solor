@@ -31,7 +31,8 @@ const DashboardView = {
             <button id="view-all-history-btn" class="btn btn-outline btn-sm">View All</button>
           </div>
           <div class="card-body" style="padding: 0;">
-            <div class="table-container">
+            <!-- Desktop/Tablet Data Table -->
+            <div class="table-container desktop-only-table">
               <table class="data-table">
                 <thead>
                   <tr>
@@ -47,6 +48,11 @@ const DashboardView = {
                   ${Skeleton.renderTableRows(4, 6)}
                 </tbody>
               </table>
+            </div>
+
+            <!-- Mobile Card List Container -->
+            <div id="recent-entries-mobile-list" class="recent-mobile-list">
+              <div style="text-align: center; padding: 20px; color: var(--text-muted);">Loading recent entries...</div>
             </div>
           </div>
         </div>
@@ -214,13 +220,17 @@ const DashboardView = {
       if (window.lucide) lucide.createIcons();
       this.animateCounters();
 
-      // Render Recent Entries Table
+      // Render Desktop Data Table
       const tbody = document.getElementById('recent-entries-tbody');
+      const mobileList = document.getElementById('recent-entries-mobile-list');
+
       if (data.recentEntries.length === 0) {
         tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 24px; color: var(--text-muted);">No daily entries recorded yet.</td></tr>`;
+        mobileList.innerHTML = `<div style="text-align: center; padding: 24px; color: var(--text-muted);">No daily entries recorded yet.</div>`;
         return;
       }
 
+      // 1. Desktop Table Rows
       tbody.innerHTML = data.recentEntries.map(e => {
         let badgeClass = 'badge-balanced';
         if (e.status === 'profit') badgeClass = 'badge-profit';
@@ -239,6 +249,41 @@ const DashboardView = {
           </tr>
         `;
       }).join('');
+
+      // 2. Mobile Touch Cards
+      mobileList.innerHTML = data.recentEntries.map(e => {
+        let badgeClass = 'badge-balanced';
+        if (e.status === 'profit') badgeClass = 'badge-profit';
+        if (e.status === 'loss') badgeClass = 'badge-loss';
+
+        const amountStr = e.status === 'profit' ? `+${curr}${e.revenue}` : (e.status === 'loss' ? `-${curr}${e.payable}` : `${curr}0.00`);
+        const amountColor = e.status === 'profit' ? 'var(--success-600)' : (e.status === 'loss' ? 'var(--danger-600)' : 'var(--text-primary)');
+
+        return `
+          <div class="mobile-entry-card">
+            <div class="mobile-entry-top">
+              <div class="mobile-entry-date"><i data-lucide="calendar" style="width:16px; height:16px;"></i> ${e.entry_date}</div>
+              <span class="badge ${badgeClass}">${e.status}</span>
+            </div>
+            <div class="mobile-entry-body">
+              <div>
+                <span class="stat-label">Generated</span>
+                <span class="stat-value" style="color: var(--primary-600);">${e.generated_units} kWh</span>
+              </div>
+              <div>
+                <span class="stat-label">Consumed</span>
+                <span class="stat-value" style="color: var(--text-secondary);">${e.consumed_units} kWh</span>
+              </div>
+              <div>
+                <span class="stat-label">Financial</span>
+                <span class="stat-value" style="color: ${amountColor};">${amountStr}</span>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      if (window.lucide) lucide.createIcons();
 
     } catch (err) {
       console.error('Failed to load dashboard data:', err);
