@@ -1,54 +1,69 @@
 /**
  * Authentication Management Module
  */
-const DEMO_USER_ID = '42d532a5-8e20-4bed-9122-6ee8381384c4';
-
 const Auth = {
   supabaseClient: null,
 
-  init() {
-    if (window.supabase && CONFIG.SUPABASE_URL && !CONFIG.SUPABASE_URL.includes('demo-solar')) {
-      try {
-        this.supabaseClient = window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
-      } catch (e) {
-        console.warn('Supabase client failed to initialize, using demo mode.');
+  async init() {
+    try {
+      const res = await API.getConfig();
+      if (res && res.data && res.data.SUPABASE_URL) {
+        CONFIG.SUPABASE_URL = res.data.SUPABASE_URL;
+        CONFIG.SUPABASE_ANON_KEY = res.data.SUPABASE_ANON_KEY;
+        if (window.supabase && CONFIG.SUPABASE_URL && !CONFIG.SUPABASE_URL.includes('demo-solar')) {
+          this.supabaseClient = window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
+        }
       }
+    } catch (e) {
+      console.warn('Config fetch failed, running standard auth.');
     }
   },
 
   async signUp(email, password) {
-    if (this.supabaseClient) {
-      const { data, error } = await this.supabaseClient.auth.signUp({ email, password });
-      if (error) throw error;
-      if (data.session) {
-        appState.setState({ user: data.user, token: data.session.access_token });
-      }
-      return data;
+    if (!email || !email.includes('@')) {
+      throw new Error('Please enter a valid email address.');
+    }
+    if (!password || password.length < 6) {
+      throw new Error('Password must be at least 6 characters long.');
     }
 
-    // Demo Mode Sign Up
-    const demoUser = { id: DEMO_USER_ID, email };
-    appState.setState({ user: demoUser, token: 'demo-token' });
-    return { user: demoUser };
+    try {
+      const res = await API.signUp(email, password);
+      const token = res.data.session?.access_token || 'demo-token-' + Date.now();
+      const user = res.data.user;
+
+      appState.setState({ user, token });
+      return res.data;
+    } catch (err) {
+      throw err;
+    }
   },
 
   async signIn(email, password) {
-    if (this.supabaseClient) {
-      const { data, error } = await this.supabaseClient.auth.signInWithPassword({ email, password });
-      if (error) throw error;
-      appState.setState({ user: data.user, token: data.session.access_token });
-      return data;
+    if (!email || !email.includes('@')) {
+      throw new Error('Please enter a valid email address.');
+    }
+    if (!password || password.length < 6) {
+      throw new Error('Password must be at least 6 characters long.');
     }
 
-    // Demo Mode Sign In
-    const demoUser = { id: DEMO_USER_ID, email: email || 'Prit@solar.com' };
-    appState.setState({ user: demoUser, token: 'demo-token' });
-    return { user: demoUser };
+    try {
+      const res = await API.login(email, password);
+      const token = res.data.session?.access_token || 'demo-token-' + Date.now();
+      const user = res.data.user;
+
+      appState.setState({ user, token });
+      return res.data;
+    } catch (err) {
+      throw err;
+    }
   },
 
   async signOut() {
     if (this.supabaseClient) {
-      await this.supabaseClient.auth.signOut();
+      try {
+        await this.supabaseClient.auth.signOut();
+      } catch (e) {}
     }
     appState.setState({ user: null, token: null });
     Router.navigate('auth');
@@ -58,23 +73,18 @@ const Auth = {
     const token = appState.getState().token;
     if (!token) return false;
 
-    if (token === 'demo-token') {
-      appState.setState({ user: { id: DEMO_USER_ID, email: 'Prit@solar.com' } });
-      return true;
-    }
-
-    if (this.supabaseClient) {
-      const { data: { user }, error } = await this.supabaseClient.auth.getUser(token);
-      if (error || !user) {
+    try {
+      const res = await API.getMe();
+      if (res && res.success && res.data) {
+        appState.setState({ user: res.data });
+        return true;
+      } else {
         appState.setState({ user: null, token: null });
         return false;
       }
-      appState.setState({ user });
-      return true;
+    } catch (err) {
+      appState.setState({ user: null, token: null });
+      return false;
     }
-
-    // Default fallback
-    appState.setState({ user: { id: DEMO_USER_ID, email: 'Prit@solar.com' } });
-    return true;
   }
 };

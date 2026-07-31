@@ -1,5 +1,5 @@
 /**
- * Auth View Component
+ * Auth View Component with Full Validation & Supabase Integration
  */
 const AuthView = {
   isSignUp: false,
@@ -15,9 +15,12 @@ const AuthView = {
             </div>
             <h2 id="auth-title-text" class="auth-title">${this.isSignUp ? 'Create your account' : 'Welcome back'}</h2>
             <p id="auth-subtitle-text" class="auth-subtitle">
-              ${this.isSignUp ? 'Enter your details to register' : 'Enter your credentials to access your dashboard'}
+              ${this.isSignUp ? 'Enter your email & password to register' : 'Enter your email & password to access your dashboard'}
             </p>
           </div>
+
+          <!-- Alert message banner for error feedback -->
+          <div id="auth-alert-banner" style="display: none; padding: 12px; border-radius: var(--radius-md); background: var(--danger-50); color: var(--danger-600); border: 1px solid var(--danger-200); font-size: 0.85rem; margin-bottom: 16px;"></div>
 
           <form id="auth-form">
             <div class="form-group">
@@ -27,10 +30,17 @@ const AuthView = {
 
             <div class="form-group">
               <label class="form-label" for="auth-password">Password</label>
-              <input type="password" id="auth-password" class="form-control" placeholder="••••••••" value="" required />
+              <input type="password" id="auth-password" class="form-control" placeholder="Minimum 6 characters" value="" required minlength="6" />
             </div>
 
-            <button type="submit" id="auth-submit-btn" class="btn btn-primary" style="width: 100%; margin-top: 10px;">
+            ${this.isSignUp ? `
+              <div class="form-group">
+                <label class="form-label" for="auth-confirm-password">Confirm Password</label>
+                <input type="password" id="auth-confirm-password" class="form-control" placeholder="Repeat password" value="" required minlength="6" />
+              </div>
+            ` : ''}
+
+            <button type="submit" id="auth-submit-btn" class="btn btn-primary" style="width: 100%; margin-top: 14px;">
               <i data-lucide="${this.isSignUp ? 'user-plus' : 'log-in'}"></i>
               <span>${this.isSignUp ? 'Sign Up' : 'Sign In'}</span>
             </button>
@@ -53,6 +63,7 @@ const AuthView = {
   bindEvents() {
     const form = document.getElementById('auth-form');
     const toggleBtn = document.getElementById('auth-toggle-btn');
+    const alertBanner = document.getElementById('auth-alert-banner');
 
     toggleBtn.onclick = (e) => {
       e.preventDefault();
@@ -62,9 +73,40 @@ const AuthView = {
 
     form.onsubmit = async (e) => {
       e.preventDefault();
-      const email = document.getElementById('auth-email').value;
+      alertBanner.style.display = 'none';
+
+      const email = document.getElementById('auth-email').value.trim();
       const password = document.getElementById('auth-password').value;
+      const confirmPasswordEl = document.getElementById('auth-confirm-password');
       const submitBtn = document.getElementById('auth-submit-btn');
+
+      // Validation 1: Email Format Regex
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        alertBanner.textContent = 'Please enter a valid email address.';
+        alertBanner.style.display = 'block';
+        Toast.error('Please enter a valid email address.');
+        return;
+      }
+
+      // Validation 2: Password Minimum Length
+      if (password.length < 6) {
+        alertBanner.textContent = 'Password must be at least 6 characters long.';
+        alertBanner.style.display = 'block';
+        Toast.error('Password must be at least 6 characters long.');
+        return;
+      }
+
+      // Validation 3: Confirm Password Match (on Sign Up)
+      if (this.isSignUp && confirmPasswordEl) {
+        const confirmPassword = confirmPasswordEl.value;
+        if (password !== confirmPassword) {
+          alertBanner.textContent = 'Passwords do not match. Please verify.';
+          alertBanner.style.display = 'block';
+          Toast.error('Passwords do not match.');
+          return;
+        }
+      }
 
       submitBtn.disabled = true;
       submitBtn.innerHTML = `<span>Processing...</span>`;
@@ -79,9 +121,14 @@ const AuthView = {
         }
         Router.navigate('dashboard');
       } catch (err) {
-        Toast.error(err.message || 'Authentication failed');
+        const errorMsg = err.message || 'Invalid credentials or login failed.';
+        alertBanner.textContent = errorMsg;
+        alertBanner.style.display = 'block';
+        Toast.error(errorMsg);
       } finally {
         submitBtn.disabled = false;
+        submitBtn.innerHTML = `<i data-lucide="${this.isSignUp ? 'user-plus' : 'log-in'}"></i><span>${this.isSignUp ? 'Sign Up' : 'Sign In'}</span>`;
+        if (window.lucide) lucide.createIcons();
       }
     };
   }

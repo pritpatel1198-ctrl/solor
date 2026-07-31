@@ -25,7 +25,9 @@ const API = {
 
       if (!response.ok || data.success === false) {
         const errorMsg = data.error || `HTTP Error ${response.status}`;
-        Toast.error(errorMsg);
+        if (!options.silentError) {
+          Toast.error(errorMsg);
+        }
         throw new Error(errorMsg);
       }
 
@@ -34,6 +36,29 @@ const API = {
       console.error(`API Error on ${endpoint}:`, err);
       throw err;
     }
+  },
+
+  // Auth & Config
+  getConfig() {
+    return this.request('/config', { silentError: true });
+  },
+
+  login(email, password) {
+    return this.request('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email, password })
+    });
+  },
+
+  signUp(email, password) {
+    return this.request('/auth/signup', {
+      method: 'POST',
+      body: JSON.stringify({ email, password })
+    });
+  },
+
+  getMe() {
+    return this.request('/auth/me');
   },
 
   // Entries

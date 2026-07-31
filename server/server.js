@@ -3,6 +3,7 @@ const cors = require('cors');
 const path = require('path');
 require('dotenv').config();
 
+const authRoutes = require('./routes/authRoutes');
 const entryRoutes = require('./routes/entryRoutes');
 const analyticsRoutes = require('./routes/analyticsRoutes');
 const settingsRoutes = require('./routes/settingsRoutes');
@@ -20,9 +21,21 @@ const clientPath = path.join(__dirname, '../client');
 app.use(express.static(clientPath));
 
 // API Routes
+app.use('/api', authRoutes);
 app.use('/api/entries', entryRoutes);
 app.use('/api', analyticsRoutes);
 app.use('/api', settingsRoutes);
+
+// Config endpoint exposing public Supabase config to client
+app.get('/api/config', (req, res) => {
+  res.json({
+    success: true,
+    data: {
+      SUPABASE_URL: process.env.SUPABASE_URL || '',
+      SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY || ''
+    }
+  });
+});
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
