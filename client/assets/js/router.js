@@ -6,11 +6,16 @@ const Router = {
     auth: AuthView,
     dashboard: DashboardView,
     entry: EntryView,
-    history: HistoryView,
+    records: RecordsView,
     reports: ReportsView,
-    analytics: AnalyticsView,
     calendar: CalendarView,
     settings: SettingsView
+  },
+
+  // History and Settlement are the two tabs of the Records module
+  resolve(route, params = {}) {
+    if (route === 'history' || route === 'settlement') return ['records', { ...params, tab: route }];
+    return [this.routes[route] ? route : 'dashboard', params];
   },
 
   init() {
@@ -25,14 +30,13 @@ const Router = {
         const route = item.getAttribute('data-route');
         if (route) {
           this.navigate(route);
-          // Close mobile sidebar if open
-          document.querySelector('.sidebar')?.classList.remove('mobile-open');
         }
       };
     });
   },
 
   async navigate(route, params = {}) {
+    [route, params] = this.resolve(route, params);
     const isLoggedIn = await Auth.checkSession();
 
     if (!isLoggedIn && route !== 'auth') {
@@ -43,7 +47,8 @@ const Router = {
       route = 'dashboard';
     }
 
-    history.pushState({ route, params }, '', `#${route}`);
+    const hash = route === 'records' ? (params.tab || RecordsView.activeTab) : route;
+    history.pushState({ route, params }, '', `#${hash}`);
     await this.renderRoute(route, params);
   },
 
@@ -51,10 +56,13 @@ const Router = {
     const hash = window.location.hash.replace('#', '') || 'dashboard';
     const isLoggedIn = await Auth.checkSession();
 
-    let route = hash;
-    if (!isLoggedIn) route = 'auth';
+    let [route, params] = this.resolve(hash);
+    if (!isLoggedIn) {
+      route = 'auth';
+      params = {};
+    }
 
-    await this.renderRoute(route);
+    await this.renderRoute(route, params);
   },
 
   async renderRoute(route, params = {}) {
@@ -64,6 +72,7 @@ const Router = {
     const header = document.getElementById('top-header');
 
     appState.setState({ currentView: route });
+    window.scrollTo(0, 0);
 
     const bottomNav = document.getElementById('mobile-bottom-nav');
 
@@ -72,21 +81,20 @@ const Router = {
       if (sidebar) sidebar.style.display = 'none';
       if (header) header.style.display = 'none';
       if (bottomNav) bottomNav.style.display = 'none';
-      contentArea.style.padding = '0';
+      contentArea.className = 'w-full flex-1';
     } else {
       if (sidebar) sidebar.style.display = '';
       if (header) header.style.display = 'flex';
       if (bottomNav) bottomNav.style.display = '';
-      contentArea.style.padding = '';
+      contentArea.className = 'mx-auto w-full max-w-6xl flex-1 px-4 pt-4 pb-tabbar md:px-6 md:pt-6 lg:px-8 lg:pb-10';
     }
 
     // Update Header Title
     const titleMap = {
       dashboard: 'Dashboard',
       entry: 'Daily Entry',
-      history: 'History',
+      records: 'Records',
       reports: 'Reports',
-      analytics: 'Analytics',
       calendar: 'Calendar',
       settings: 'Settings'
     };
@@ -100,7 +108,10 @@ const Router = {
       } else {
         nav.classList.remove('active');
       }
+      if (nav.getAttribute('data-route') === route) nav.setAttribute('aria-current', 'page');
+      else nav.removeAttribute('aria-current');
     });
+
 
     // Render View Content
     await view.render(contentArea, params);

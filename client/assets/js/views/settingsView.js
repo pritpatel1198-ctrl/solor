@@ -8,102 +8,81 @@ const SettingsView = {
     const currentTheme = appState.getState().theme;
 
     container.innerHTML = `
-      <div class="view-header" style="margin-bottom: 24px;">
-        <h2 style="font-size: 1.5rem; font-weight: 800; color: var(--text-primary);">Settings & Preferences</h2>
-        <p style="color: var(--text-secondary); font-size: 0.9rem;">Configure solar electricity buying/selling rates, currency symbol, display theme, and data backups.</p>
-      </div>
+      ${UI.pageHead({ description: 'Tariff rates, currency, theme, account and data backups.' })}
 
-      <div class="settings-grid">
-        <!-- Tariff & Preferences Card -->
-        <div class="card">
-          <div class="card-header">
-            <h3 class="card-title">Default Tariff Rates & Currency</h3>
+      <div class="mx-auto grid max-w-4xl grid-cols-1 items-start gap-3 md:grid-cols-2 md:gap-4">
+        <!-- Account -->
+        <section class="card card-body md:col-start-2" aria-label="Account">
+          <div class="flex items-center gap-3">
+            <span class="grid size-12 shrink-0 place-items-center rounded-full bg-primary text-lg font-semibold text-on-primary" aria-hidden="true">
+              ${user && user.email ? escapeHtml(user.email.charAt(0).toUpperCase()) : 'S'}
+            </span>
+            <div class="min-w-0">
+              <div class="truncate text-[0.9375rem] font-semibold">${escapeHtml(user ? user.email : '')}</div>
+              <div class="truncate text-xs text-ink-3">ID ${escapeHtml(user ? user.id : '')}</div>
+            </div>
           </div>
+          <button id="settings-logout-btn" class="btn btn-danger btn-block mt-4">
+            ${UI.icon('log-out')}<span>Sign Out</span>
+          </button>
+        </section>
+
+        <!-- Tariffs -->
+        <section class="card md:col-start-1 md:row-span-2 md:row-start-1" aria-labelledby="settings-tariff-title">
+          <div class="card-header"><h2 id="settings-tariff-title" class="card-title">Rates &amp; preferences</h2></div>
           <div class="card-body">
-            <form id="settings-form">
-              <div class="form-group">
-                <label class="form-label" for="setting-buying-rate">Default Govt Buying Rate (Revenue/Unit)</label>
-                <input type="number" step="0.01" min="0" id="setting-buying-rate" class="form-control" value="${settings.default_buying_rate}" required />
+            <form id="settings-form" class="flex flex-col gap-4">
+              <div class="grid grid-cols-2 gap-3">
+                <div class="field">
+                  <label class="label" for="setting-buying-rate">Buying rate (per unit)</label>
+                  <input type="number" inputmode="decimal" step="0.01" min="0" id="setting-buying-rate" class="input" value="${settings.default_buying_rate}" required />
+                </div>
+                <div class="field">
+                  <label class="label" for="setting-selling-rate">Selling rate (per unit)</label>
+                  <input type="number" inputmode="decimal" step="0.01" min="0" id="setting-selling-rate" class="input" value="${settings.default_selling_rate}" required />
+                </div>
               </div>
+              <p class="hint -mt-2">Buying: what the govt credits you for surplus. Selling: what you pay for grid units.</p>
 
-              <div class="form-group">
-                <label class="form-label" for="setting-selling-rate">Default Govt Selling Rate (Payable/Unit)</label>
-                <input type="number" step="0.01" min="0" id="setting-selling-rate" class="form-control" value="${settings.default_selling_rate}" required />
-              </div>
-
-              <div class="form-group">
-                <label class="form-label" for="setting-currency">Currency Symbol</label>
-                <select id="setting-currency" class="form-select">
-                  <option value="₹" ${settings.currency === '₹' ? 'selected' : ''}>₹ (INR - Indian Rupee)</option>
-                  <option value="$" ${settings.currency === '$' ? 'selected' : ''}>$ (USD - US Dollar)</option>
-                  <option value="€" ${settings.currency === '€' ? 'selected' : ''}>€ (EUR - Euro)</option>
-                  <option value="£" ${settings.currency === '£' ? 'selected' : ''}>£ (GBP - British Pound)</option>
+              <div class="field">
+                <label class="label" for="setting-currency">Currency</label>
+                <select id="setting-currency" class="input">
+                  <option value="₹" ${settings.currency === '₹' ? 'selected' : ''}>₹ Indian Rupee</option>
+                  <option value="$" ${settings.currency === '$' ? 'selected' : ''}>$ US Dollar</option>
+                  <option value="€" ${settings.currency === '€' ? 'selected' : ''}>€ Euro</option>
+                  <option value="£" ${settings.currency === '£' ? 'selected' : ''}>£ British Pound</option>
                 </select>
               </div>
 
-              <div class="form-group">
-                <label class="form-label" for="setting-theme">Color Theme</label>
-                <select id="setting-theme" class="form-select">
-                  <option value="light" ${currentTheme === 'light' ? 'selected' : ''}>Light Mode</option>
-                  <option value="dark" ${currentTheme === 'dark' ? 'selected' : ''}>Dark Mode</option>
+              <div class="field">
+                <label class="label" for="setting-theme">Theme</label>
+                <select id="setting-theme" class="input">
+                  <option value="light" ${currentTheme === 'light' ? 'selected' : ''}>Light</option>
+                  <option value="dark" ${currentTheme === 'dark' ? 'selected' : ''}>Dark</option>
                 </select>
               </div>
 
-              <button type="submit" id="settings-save-btn" class="btn btn-primary" style="margin-top: 10px;">
-                <i data-lucide="save"></i>
-                <span>Save Preferences</span>
+              <button type="submit" id="settings-save-btn" class="btn btn-primary btn-block">
+                ${UI.icon('save')}<span>Save Preferences</span>
               </button>
             </form>
           </div>
-        </div>
+        </section>
 
-        <!-- Account Profile & Data Backup / Restore Card -->
-        <div style="display: flex; flex-direction: column; gap: 24px;">
-          <!-- User Profile -->
-          <div class="card">
-            <div class="card-header">
-              <h3 class="card-title">User Account Profile</h3>
-            </div>
-            <div class="card-body">
-              <div style="display: flex; align-items: center; gap: 16px;">
-                <div class="user-avatar" style="width: 48px; height: 48px; font-size: 1.2rem;">
-                  ${user && user.email ? user.email.charAt(0).toUpperCase() : 'S'}
-                </div>
-                <div>
-                  <div style="font-weight: 700; font-size: 1.05rem; color: var(--text-primary);">${user ? user.email : 'Prit@solar.com'}</div>
-                  <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 2px;">User ID: ${user ? user.id : 'demo-user-id'}</div>
-                </div>
-              </div>
-              <button id="settings-logout-btn" class="btn btn-outline btn-sm" style="margin-top: 20px; color: var(--danger-600);">
-                <i data-lucide="log-out"></i>
-                <span>Sign Out</span>
-              </button>
+        <!-- Backup -->
+        <section class="card md:col-start-2" aria-labelledby="settings-backup-title">
+          <div class="card-header"><h2 id="settings-backup-title" class="card-title">Backup &amp; restore</h2></div>
+          <div class="card-body flex flex-col gap-3">
+            <p class="text-sm text-ink-3">Download all your data as a JSON file, or restore from an earlier backup.</p>
+            <div class="grid grid-cols-2 gap-2">
+              <button id="backup-export-btn" class="btn btn-outline">${UI.icon('download')}<span>Export</span></button>
+              <label class="btn btn-outline cursor-pointer focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-accent">
+                ${UI.icon('upload')}<span>Restore</span>
+                <input type="file" id="backup-import-file" accept=".json" class="sr-only" />
+              </label>
             </div>
           </div>
-
-          <!-- Data Backup & Restore -->
-          <div class="card">
-            <div class="card-header">
-              <h3 class="card-title">Data Backup & Restore</h3>
-            </div>
-            <div class="card-body" style="display: flex; flex-direction: column; gap: 16px;">
-              <p style="font-size: 0.88rem; color: var(--text-secondary);">Export your complete solar dataset to JSON or restore from a previous backup file.</p>
-              
-              <div style="display: flex; gap: 12px; flex-wrap: wrap;">
-                <button id="backup-export-btn" class="btn btn-secondary">
-                  <i data-lucide="download"></i>
-                  <span>Export Backup (JSON)</span>
-                </button>
-
-                <label class="btn btn-outline" style="cursor: pointer;">
-                  <i data-lucide="upload"></i>
-                  <span>Restore from JSON</span>
-                  <input type="file" id="backup-import-file" accept=".json" style="display: none;" />
-                </label>
-              </div>
-            </div>
-          </div>
-        </div>
+        </section>
       </div>
     `;
 
@@ -132,7 +111,7 @@ const SettingsView = {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `solar_tracker_backup_${new Date().toISOString().split('T')[0]}.json`;
+        a.download = `solar_tracker_backup_${localDateStr()}.json`;
         a.click();
         URL.revokeObjectURL(url);
         Toast.success('Backup file exported successfully!');
@@ -143,6 +122,8 @@ const SettingsView = {
 
     importFileInput.onchange = (e) => {
       const file = e.target.files[0];
+      // Allow choosing the same file again later
+      e.target.value = '';
       if (!file) return;
 
       const reader = new FileReader();
@@ -166,7 +147,7 @@ const SettingsView = {
 
       const payload = {
         default_buying_rate: parseFloat(document.getElementById('setting-buying-rate').value) || 2.00,
-        default_selling_rate: parseFloat(document.getElementById('setting-selling-rate').value) || 7.00,
+        default_selling_rate: parseFloat(document.getElementById('setting-selling-rate').value) || 2.25,
         currency: document.getElementById('setting-currency').value,
         theme: document.getElementById('setting-theme').value
       };

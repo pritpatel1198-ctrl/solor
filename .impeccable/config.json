@@ -1,0 +1,23 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "overused-font",
+        "value": "inter",
+        "createdAt": "2026-11-21T17:20:40.964Z",
+        "reason": "DESIGN.md typography specifies Inter as the project font; PDF statements use it too"
+      },
+      {
+        "rule": "cramped-padding",
+        "value": "*",
+        "files": [
+          "client/index.html"
+        ],
+        "createdAt": "2026-11-21T17:23:30.179Z",
+        "reason": "False positive: static scan misses compiled Tailwind; More sheet renders with a measured 16px inset in browser screenshots"
+      }
+    ]
+  }
+}

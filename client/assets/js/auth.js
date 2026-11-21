@@ -29,10 +29,12 @@ const Auth = {
 
     try {
       const res = await API.signUp(email, password);
-      const token = res.data.session?.access_token || 'demo-token-' + Date.now();
-      const user = res.data.user;
+      const token = res.data.session?.access_token;
+      // No session means Supabase requires email confirmation before the first sign-in
+      if (!token) return { ...res.data, needsConfirmation: true };
 
-      appState.setState({ user, token });
+      appState.setState({ user: res.data.user, token });
+      await this.loadSettings();
       return res.data;
     } catch (err) {
       throw err;
@@ -49,13 +51,26 @@ const Auth = {
 
     try {
       const res = await API.login(email, password);
-      const token = res.data.session?.access_token || 'demo-token-' + Date.now();
-      const user = res.data.user;
+      const token = res.data.session?.access_token;
+      if (!token) throw new Error('Sign in failed: no session was returned.');
 
-      appState.setState({ user, token });
+      appState.setState({ user: res.data.user, token });
+      await this.loadSettings();
       return res.data;
     } catch (err) {
       throw err;
+    }
+  },
+
+  /**
+   * Load the signed-in user's settings (rates, currency) into app state.
+   */
+  async loadSettings() {
+    try {
+      const res = await API.getSettings();
+      if (res && res.data) appState.setState({ settings: res.data });
+    } catch (err) {
+      console.warn('Could not load user settings:', err.message);
     }
   },
 
@@ -65,7 +80,11 @@ const Auth = {
         await this.supabaseClient.auth.signOut();
       } catch (e) {}
     }
-    appState.setState({ user: null, token: null });
+    appState.setState({
+      user: null,
+      token: null,
+      settings: { default_buying_rate: 2.25, default_selling_rate: 2.25, currency: '₹', theme: appState.getState().theme }
+    });
     Router.navigate('auth');
   },
 

@@ -7,6 +7,6 @@ router.use(authenticateUser);
 
 router.get('/dashboard', analyticsController.getDashboard);
 router.get('/reports', analyticsController.getReports);
-router.get('/analytics', analyticsController.getAnalytics);
+router.get('/reports/html', analyticsController.getReportHtml);
 
 module.exports = router;

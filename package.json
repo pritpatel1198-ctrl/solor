@@ -6,7 +6,9 @@
   "type": "commonjs",
   "scripts": {
     "start": "node server/server.js",
-    "dev": "node server/server.js"
+    "dev": "node server/server.js",
+    "build:css": "tailwindcss -i client/src/tailwind.css -o client/assets/css/app.css --minify",
+    "dev:css": "tailwindcss -i client/src/tailwind.css -o client/assets/css/app.css --watch"
   },
   "keywords": [
     "solar",
@@ -23,5 +25,9 @@
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.19.2"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.3.5",
+    "tailwindcss": "^4.3.5"
   }
 }

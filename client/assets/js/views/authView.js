@@ -6,52 +6,49 @@ const AuthView = {
 
   render(container) {
     container.innerHTML = `
-      <div class="auth-wrapper">
-        <div class="auth-card">
-          <div class="auth-header">
-            <div class="auth-brand">
-              <div class="brand-icon"><i data-lucide="sun"></i></div>
-              <span class="brand-title" style="font-size: 1.3rem;">Solar Tracker</span>
-            </div>
-            <h2 id="auth-title-text" class="auth-title">${this.isSignUp ? 'Create your account' : 'Welcome back'}</h2>
-            <p id="auth-subtitle-text" class="auth-subtitle">
-              ${this.isSignUp ? 'Enter your email & password to register' : 'Enter your email & password to access your dashboard'}
+      <div class="flex min-h-dvh flex-col justify-center bg-surface px-5 py-8 md:bg-canvas">
+        <div class="mx-auto w-full max-w-sm md:rounded-sheet md:border md:border-line md:bg-surface md:p-8 md:shadow-card">
+          <div class="mb-7">
+            <span class="grid size-11 place-items-center rounded-xl bg-accent-soft text-accent">${UI.icon('sun', 'size-6')}</span>
+            <h2 id="auth-title-text" class="mt-4 text-2xl font-semibold tracking-tight">${this.isSignUp ? 'Create your account' : 'Welcome back'}</h2>
+            <p id="auth-subtitle-text" class="mt-1 text-sm text-ink-3">
+              ${this.isSignUp ? 'Start tracking your rooftop solar.' : 'Sign in to your Solar Tracker.'}
             </p>
           </div>
 
           <!-- Alert message banner for error feedback -->
-          <div id="auth-alert-banner" style="display: none; padding: 12px; border-radius: var(--radius-md); background: var(--danger-50); color: var(--danger-600); border: 1px solid var(--danger-200); font-size: 0.85rem; margin-bottom: 16px;"></div>
+          <div id="auth-alert-banner" role="alert" class="mb-4 hidden rounded-control bg-bad-soft px-3 py-2.5 text-sm font-medium text-bad"></div>
 
-          <form id="auth-form">
-            <div class="form-group">
-              <label class="form-label" for="auth-email">Email Address</label>
-              <input type="email" id="auth-email" class="form-control" placeholder="name@example.com" value="" required />
+          <form id="auth-form" class="flex flex-col gap-4" novalidate>
+            <div class="field">
+              <label class="label" for="auth-email">Email</label>
+              <input type="email" id="auth-email" class="input" placeholder="name@example.com" autocomplete="email" inputmode="email" autocapitalize="none" spellcheck="false" required />
             </div>
 
-            <div class="form-group">
-              <label class="form-label" for="auth-password">Password</label>
-              <input type="password" id="auth-password" class="form-control" placeholder="Minimum 6 characters" value="" required minlength="6" />
+            <div class="field">
+              <label class="label" for="auth-password">Password</label>
+              <input type="password" id="auth-password" class="input" placeholder="Minimum 6 characters" autocomplete="${this.isSignUp ? 'new-password' : 'current-password'}" required minlength="6" />
             </div>
 
             ${this.isSignUp ? `
-              <div class="form-group">
-                <label class="form-label" for="auth-confirm-password">Confirm Password</label>
-                <input type="password" id="auth-confirm-password" class="form-control" placeholder="Repeat password" value="" required minlength="6" />
+              <div class="field">
+                <label class="label" for="auth-confirm-password">Confirm password</label>
+                <input type="password" id="auth-confirm-password" class="input" placeholder="Repeat password" autocomplete="new-password" required minlength="6" />
               </div>
             ` : ''}
 
-            <button type="submit" id="auth-submit-btn" class="btn btn-primary" style="width: 100%; margin-top: 14px;">
-              <i data-lucide="${this.isSignUp ? 'user-plus' : 'log-in'}"></i>
+            <button type="submit" id="auth-submit-btn" class="btn btn-primary btn-block mt-1 min-h-12">
+              <i data-lucide="${this.isSignUp ? 'user-plus' : 'log-in'}" aria-hidden="true"></i>
               <span>${this.isSignUp ? 'Sign Up' : 'Sign In'}</span>
             </button>
           </form>
 
-          <div style="text-align: center; margin-top: 24px; font-size: 0.88rem; color: var(--text-secondary);">
+          <p class="mt-6 text-center text-sm text-ink-3">
             <span id="auth-toggle-text">${this.isSignUp ? 'Already have an account?' : "Don't have an account?"}</span>
-            <a href="#" id="auth-toggle-btn" style="color: var(--primary-600); font-weight: 600; margin-left: 6px;">
+            <a href="#" id="auth-toggle-btn" class="ml-1 inline-flex min-h-11 items-center font-semibold text-ink underline underline-offset-2">
               ${this.isSignUp ? 'Sign In' : 'Sign Up'}
             </a>
-          </div>
+          </p>
         </div>
       </div>
     `;
@@ -109,11 +106,15 @@ const AuthView = {
       }
 
       submitBtn.disabled = true;
-      submitBtn.innerHTML = `<span>Processing...</span>`;
+      submitBtn.innerHTML = `${UI.spinner()}<span>Please wait...</span>`;
 
       try {
         if (this.isSignUp) {
-          await Auth.signUp(email, password);
+          const result = await Auth.signUp(email, password);
+          if (result.needsConfirmation) {
+            Toast.success('Account created! Check your email to confirm it, then sign in.');
+            return;
+          }
           Toast.success('Account created successfully!');
         } else {
           await Auth.signIn(email, password);

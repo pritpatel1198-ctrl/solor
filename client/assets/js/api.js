@@ -20,8 +20,31 @@ const API = {
     };
 
     try {
-      const response = await fetch(`${CONFIG.API_BASE_URL}${endpoint}`, config);
-      const data = await response.json();
+      let response;
+      try {
+        response = await fetch(`${CONFIG.API_BASE_URL}${endpoint}`, config);
+      } catch (networkErr) {
+        throw new Error('Network error: unable to reach the server. Check your connection and try again.');
+      }
+
+      let data;
+      try {
+        data = await response.json();
+      } catch (parseErr) {
+        throw new Error(`Server error (HTTP ${response.status}). Please try again.`);
+      }
+
+      // Session missing/expired: clear it and return to the login screen
+      if (response.status === 401 && token && !endpoint.startsWith('/auth/login') && !endpoint.startsWith('/auth/signup')) {
+        const errorMsg = data.error || 'Your session has expired. Please sign in again.';
+        // Several requests can fail together; only the first one (token still set) notifies and redirects
+        if (appState.getState().token) {
+          appState.setState({ user: null, token: null });
+          Toast.error(errorMsg);
+          if (typeof Router !== 'undefined') Router.navigate('auth');
+        }
+        throw new Error(errorMsg);
+      }
 
       if (!response.ok || data.success === false) {
         const errorMsg = data.error || `HTTP Error ${response.status}`;
@@ -62,9 +85,9 @@ const API = {
   },
 
   // Entries
-  getEntries(params = {}) {
+  getEntries(params = {}, options = {}) {
     const queryString = new URLSearchParams(params).toString();
-    return this.request(`/entries${queryString ? '?' + queryString : ''}`);
+    return this.request(`/entries${queryString ? "?" + queryString : ""}`, options);
   },
 
   getEntryById(id) {
@@ -98,17 +121,23 @@ const API = {
     });
   },
 
-  // Analytics & Dashboard
+  // Dashboard & Reports
   getDashboard() {
     return this.request('/dashboard');
   },
 
-  getReports(period = 'monthly') {
-    return this.request(`/reports?period=${period}`);
-  },
-
-  getAnalytics() {
-    return this.request('/analytics');
+  getReports(params = 'monthly') {
+    if (typeof params === 'string') {
+      return this.request(`/reports?period=${encodeURIComponent(params)}`);
+    }
+    const cleanParams = {};
+    Object.keys(params || {}).forEach(k => {
+      if (params[k] !== undefined && params[k] !== null && params[k] !== '') {
+        cleanParams[k] = params[k];
+      }
+    });
+    const queryString = new URLSearchParams(cleanParams).toString();
+    return this.request(`/reports${queryString ? '?' + queryString : ''}`);
   },
 
   // Settings & Backup
@@ -131,6 +160,37 @@ const API = {
     return this.request('/backup/import', {
       method: 'POST',
       body: JSON.stringify(backupData)
+    });
+  },
+
+  // Electricity bill cycles (running balance, bill history)
+  getBills(options = {}) {
+    return this.request('/bills', options);
+  },
+
+  createBill(bill) {
+    return this.request('/bills', {
+      method: 'POST',
+      body: JSON.stringify(bill)
+    });
+  },
+
+  deleteBill(id) {
+    return this.request(`/bills/${id}`, {
+      method: 'DELETE'
+    });
+  },
+
+  // Settlement API
+  getSettlement(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    return this.request(`/settlement${queryString ? '?' + queryString : ''}`);
+  },
+
+  calculateSettlement(readings, rate = 2.50) {
+    return this.request('/settlement/calculate', {
+      method: 'POST',
+      body: JSON.stringify({ readings, rate })
     });
   }
 };

@@ -10,7 +10,7 @@ async function signUp(req, res, next) {
       data: result
     });
   } catch (err) {
-    res.status(400).json({
+    res.status(err.status || 400).json({
       success: false,
       error: err.message
     });
@@ -27,7 +27,7 @@ async function signIn(req, res, next) {
       data: result
     });
   } catch (err) {
-    res.status(401).json({
+    res.status(err.status || 401).json({
       success: false,
       error: err.message
     });

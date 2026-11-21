@@ -7,6 +7,8 @@ const authRoutes = require('./routes/authRoutes');
 const entryRoutes = require('./routes/entryRoutes');
 const analyticsRoutes = require('./routes/analyticsRoutes');
 const settingsRoutes = require('./routes/settingsRoutes');
+const settlementRoutes = require('./routes/settlementRoutes');
+const billRoutes = require('./routes/billRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -20,12 +22,7 @@ app.use(express.urlencoded({ extended: true }));
 const clientPath = path.join(__dirname, '../client');
 app.use(express.static(clientPath));
 
-// API Routes
-app.use('/api', authRoutes);
-app.use('/api/entries', entryRoutes);
-app.use('/api', analyticsRoutes);
-app.use('/api', settingsRoutes);
-
+// Public endpoints (registered before routers that require authentication)
 // Config endpoint exposing public Supabase config to client
 app.get('/api/config', (req, res) => {
   res.json({
@@ -37,14 +34,27 @@ app.get('/api/config', (req, res) => {
   });
 });
 
+const { isSupabaseAvailable } = require('./config/supabase');
+
 // Health check endpoint
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'ok',
     service: 'Solar Revenue Tracker API',
+    database: isSupabaseAvailable() ? 'supabase_cloud' : 'local_storage',
     timestamp: new Date().toISOString()
   });
 });
+
+// API Routes
+// Path-specific routers first: the '/api' routers below apply authentication to every
+// request passing through them, so mounting these after them verified the token 3 times.
+app.use('/api', authRoutes);
+app.use('/api/entries', entryRoutes);
+app.use('/api/settlement', settlementRoutes);
+app.use('/api/bills', billRoutes);
+app.use('/api', analyticsRoutes);
+app.use('/api', settingsRoutes);
 
 // Single Page Application route fallback
 app.get('*', (req, res) => {
@@ -56,10 +66,12 @@ app.get('*', (req, res) => {
 
 // Global Error Handler
 app.use((err, req, res, next) => {
-  console.error('Global Server Error:', err);
-  res.status(500).json({
+  const status = err.status || err.statusCode || 500;
+  if (status >= 500) console.error('Global Server Error:', err);
+  res.status(status).json({
     success: false,
-    error: err.message || 'Internal Server Error'
+    // Don't leak internal error details for unexpected failures
+    error: status >= 500 ? 'Internal Server Error' : (err.message || 'Bad Request')
   });
 });
 

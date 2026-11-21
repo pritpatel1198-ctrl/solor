@@ -16,89 +16,109 @@ const HistoryView = {
   currentEntries: [],
 
   async render(container) {
+    const q = this.queryParams;
+    const hasFilters = q.status !== 'all' || q.startDate || q.endDate;
+
     container.innerHTML = `
-      <div class="view-header" style="margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
-        <div>
-          <h2 style="font-size: 1.5rem; font-weight: 800; color: var(--text-primary);">Meter Reading History</h2>
-          <p style="color: var(--text-secondary); font-size: 0.9rem;">View, search, filter, export, and manage your complete historical solar log.</p>
-        </div>
-        <div style="display: flex; gap: 10px;">
-          <button id="export-csv-btn" class="btn btn-outline">
-            <i data-lucide="file-spreadsheet"></i>
-            <span>Export CSV</span>
-          </button>
-          <button id="export-pdf-btn" class="btn btn-outline">
-            <i data-lucide="file-text"></i>
-            <span>Export PDF</span>
-          </button>
-        </div>
-      </div>
-
-      <!-- History Search & Filter Toolbar -->
-      <div class="history-toolbar">
-        <div class="history-search-group">
-          <input type="text" id="history-search-input" class="form-control" placeholder="Search by date, notes, units..." value="${this.queryParams.search}" />
-          
-          <select id="history-status-filter" class="form-select" style="max-width: 150px;">
-            <option value="all" ${this.queryParams.status === 'all' ? 'selected' : ''}>All Status</option>
-            <option value="profit" ${this.queryParams.status === 'profit' ? 'selected' : ''}>Profit Only</option>
-            <option value="loss" ${this.queryParams.status === 'loss' ? 'selected' : ''}>Loss Only</option>
-            <option value="balanced" ${this.queryParams.status === 'balanced' ? 'selected' : ''}>Balanced</option>
-          </select>
-        </div>
-
-        <div class="history-actions-group">
-          <input type="date" id="history-start-date" class="form-control" value="${this.queryParams.startDate}" style="max-width: 150px;" />
-          <span style="color: var(--text-muted);">to</span>
-          <input type="date" id="history-end-date" class="form-control" value="${this.queryParams.endDate}" style="max-width: 150px;" />
-
-          <button id="bulk-delete-btn" class="btn btn-danger btn-sm" style="display: none;">
-            <i data-lucide="trash-2"></i>
-            <span id="bulk-delete-count">Delete Selected (0)</span>
-          </button>
-        </div>
-      </div>
-
-      <!-- History Data Table Card -->
-      <div class="card">
-        <div class="card-body" style="padding: 0;">
-          <div class="table-container">
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th style="width: 40px; text-align: center;">
-                    <input type="checkbox" id="select-all-checkbox" />
-                  </th>
-                  <th class="sortable-th" data-sort="entry_date">Date <i data-lucide="chevrons-up-down"></i></th>
-                  <th class="sortable-th" data-sort="generated_units">Generated <i data-lucide="chevrons-up-down"></i></th>
-                  <th class="sortable-th" data-sort="consumed_units">Consumed <i data-lucide="chevrons-up-down"></i></th>
-                  <th class="sortable-th" data-sort="net_units">Net Units <i data-lucide="chevrons-up-down"></i></th>
-                  <th>Buying / Selling Rate</th>
-                  <th class="sortable-th" data-sort="revenue">Revenue / Payable <i data-lucide="chevrons-up-down"></i></th>
-                  <th>Status</th>
-                  <th>Notes</th>
-                  <th style="text-align: right;">Actions</th>
-                </tr>
-              </thead>
-              <tbody id="history-tbody">
-                ${Skeleton.renderTableRows(5, 10)}
-              </tbody>
-            </table>
+      <!-- Search & filters -->
+      <div class="mb-3 flex flex-col gap-2 md:mb-4 print:hidden">
+        <div class="flex gap-2">
+          <div class="relative min-w-0 flex-1">
+            <span class="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-ink-3">${UI.icon('search', 'size-4')}</span>
+            <label class="sr-only" for="history-search-input">Search readings</label>
+            <input type="search" id="history-search-input" class="input pl-9" placeholder="Search readings" value="${escapeHtml(q.search)}" />
           </div>
+          <button id="history-select-toggle" class="btn btn-outline shrink-0 px-3 aria-pressed:border-primary lg:hidden" aria-pressed="false">${UI.icon('check-square')}<span>Select</span></button>
+        </div>
 
-          <!-- Pagination Bar -->
-          <div style="padding: 16px 24px; border-top: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
-            <div id="pagination-info" style="font-size: 0.88rem; color: var(--text-secondary);">
-              Showing 0-0 of 0 entries
+        <details class="card group" ${hasFilters || window.innerWidth >= 1024 ? 'open' : ''}>
+          <summary class="flex min-h-11 items-center justify-between gap-3 px-3.5 text-sm font-medium text-ink-2">
+            <span class="flex items-center gap-2">${UI.icon('sliders-horizontal', 'size-4')}Filters, sort &amp; export</span>
+            <span class="text-ink-3 transition-transform duration-150 group-open:rotate-180">${UI.icon('chevron-down', 'size-4')}</span>
+          </summary>
+          <div class="grid grid-cols-2 gap-3 px-3.5 pb-3.5 lg:grid-cols-4">
+            <div class="field">
+              <label class="label" for="history-status-filter">Status</label>
+              <select id="history-status-filter" class="input">
+                <option value="all" ${q.status === 'all' ? 'selected' : ''}>All</option>
+                <option value="profit" ${q.status === 'profit' ? 'selected' : ''}>Profit</option>
+                <option value="loss" ${q.status === 'loss' ? 'selected' : ''}>Loss</option>
+                <option value="balanced" ${q.status === 'balanced' ? 'selected' : ''}>Balanced</option>
+              </select>
             </div>
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <button id="prev-page-btn" class="btn btn-outline btn-sm" disabled>Previous</button>
-              <span id="page-num-display" style="font-size: 0.88rem; font-weight: 600; padding: 0 8px;">Page 1</span>
-              <button id="next-page-btn" class="btn btn-outline btn-sm" disabled>Next</button>
+            <div class="field lg:hidden">
+              <label class="label" for="history-sort-select">Sort by</label>
+              <select id="history-sort-select" class="input">
+                <option value="entry_date:desc">Newest first</option>
+                <option value="entry_date:asc">Oldest first</option>
+                <option value="generated_units:desc">Most export</option>
+                <option value="consumed_units:desc">Most import</option>
+                <option value="net_units:desc">Highest net</option>
+                <option value="net_units:asc">Lowest net</option>
+              </select>
+            </div>
+            <div class="field">
+              <label class="label" for="history-start-date">From</label>
+              <input type="date" id="history-start-date" class="input" value="${escapeHtml(q.startDate)}" />
+            </div>
+            <div class="field">
+              <label class="label" for="history-end-date">To</label>
+              <input type="date" id="history-end-date" class="input" value="${escapeHtml(q.endDate)}" />
+            </div>
+            <div class="col-span-2 flex gap-2 lg:col-span-4 lg:justify-end">
+              <button id="export-csv-btn" class="btn btn-outline flex-1 lg:flex-none">${UI.icon('file-spreadsheet')}<span>Export CSV</span></button>
+              <button id="export-pdf-btn" class="btn btn-outline flex-1 lg:flex-none">${UI.icon('printer')}<span>Print / PDF</span></button>
             </div>
           </div>
-        </div>
+        </details>
       </div>
+
+      <button id="bulk-delete-btn" class="btn btn-danger bottom-tabbar fixed inset-x-4 z-30 mb-2 hidden shadow-float lg:static lg:mb-3 lg:shadow-none print:hidden">
+        ${UI.icon('trash-2')}
+        <span id="bulk-delete-count">Delete Selected (0)</span>
+      </button>
+
+      <section class="card" aria-label="Reading history">
+        <!-- Desktop table -->
+        <div class="table-wrap hidden lg:block print:block">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th class="w-10 text-center print:hidden">
+                  <input type="checkbox" id="select-all-checkbox" class="check" aria-label="Select all readings on this page" />
+                </th>
+                <th class="sortable-th" data-sort="entry_date">Date ${UI.icon('chevrons-up-down')}</th>
+                <th class="sortable-th" data-sort="generated_units">Export ${UI.icon('chevrons-up-down')}</th>
+                <th class="sortable-th" data-sort="consumed_units">Import ${UI.icon('chevrons-up-down')}</th>
+                <th class="sortable-th" data-sort="net_units">Net ${UI.icon('chevrons-up-down')}</th>
+                <th>Buy / Sell</th>
+                <th class="sortable-th" data-sort="revenue">Amount ${UI.icon('chevrons-up-down')}</th>
+                <th>Status</th>
+                <th>Notes</th>
+                <th class="text-right print:hidden">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="history-tbody">
+              ${Skeleton.renderTableRows(5, 10)}
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Phone / tablet cards -->
+        <div id="history-cards" class="group/list divide-y divide-line lg:hidden print:hidden">
+          ${Skeleton.renderListRows(5)}
+        </div>
+
+        <!-- Pagination -->
+        <div class="flex items-center justify-between gap-2 border-t border-line px-3 py-2.5 md:px-5 print:hidden">
+          <button id="prev-page-btn" class="btn btn-outline btn-icon md:w-auto md:px-4" aria-label="Previous page" disabled>${UI.icon('chevron-left')}<span class="hidden md:inline">Previous</span></button>
+          <div class="min-w-0 text-center">
+            <div id="page-num-display" class="text-sm font-semibold">Page 1</div>
+            <div id="pagination-info" class="truncate text-xs text-ink-3">Showing 0-0 of 0 entries</div>
+          </div>
+          <button id="next-page-btn" class="btn btn-outline btn-icon md:w-auto md:px-4" aria-label="Next page" disabled><span class="hidden md:inline">Next</span>${UI.icon('chevron-right')}</button>
+        </div>
+      </section>
     `;
 
     if (window.lucide) lucide.createIcons();
@@ -167,6 +187,7 @@ const HistoryView = {
           this.selectedIds.delete(entry.id);
         }
       });
+      document.querySelectorAll('.entry-row-checkbox').forEach(cb => { cb.checked = isChecked; });
       this.updateSelectionUI();
     };
 
@@ -183,6 +204,33 @@ const HistoryView = {
         } catch (err) {
           Toast.error('Bulk deletion failed.');
         }
+      }
+    };
+
+    // Phone/tablet sort (the desktop table sorts from its column headers)
+    const sortSelect = document.getElementById('history-sort-select');
+    const sortValue = `${this.queryParams.sortBy}:${this.queryParams.sortOrder}`;
+    if ([...sortSelect.options].some(o => o.value === sortValue)) sortSelect.value = sortValue;
+    sortSelect.onchange = (e) => {
+      const [field, order] = e.target.value.split(':');
+      this.queryParams.sortBy = field;
+      this.queryParams.sortOrder = order;
+      this.queryParams.page = 1;
+      this.loadHistoryData();
+    };
+
+    // Phone/tablet selection mode: checkboxes only appear when asked for
+    const selectToggle = document.getElementById('history-select-toggle');
+    selectToggle.onclick = () => {
+      const list = document.getElementById('history-cards');
+      const selecting = !list.hasAttribute('data-selecting');
+      list.toggleAttribute('data-selecting', selecting);
+      selectToggle.setAttribute('aria-pressed', String(selecting));
+      selectToggle.querySelector('span').textContent = selecting ? 'Done' : 'Select';
+      if (!selecting) {
+        this.selectedIds.clear();
+        document.querySelectorAll('.entry-row-checkbox').forEach(cb => { cb.checked = false; });
+        this.updateSelectionUI();
       }
     };
 
@@ -203,60 +251,86 @@ const HistoryView = {
   },
 
   async loadHistoryData() {
+    const tbody = document.getElementById('history-tbody');
+    const cards = document.getElementById('history-cards');
     try {
       const res = await API.getEntries(this.queryParams);
+      if (!document.contains(tbody)) return; // user already switched away
       const { entries, pagination } = res;
       this.currentEntries = entries;
 
-      const currency = appState.getState().settings.currency || '₹';
-      const tbody = document.getElementById('history-tbody');
+      const currency = escapeHtml(appState.getState().settings.currency || '₹');
 
       if (entries.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="10" style="text-align: center; padding: 32px; color: var(--text-muted);">No historical records match your search criteria.</td></tr>`;
+        const empty = UI.empty({ icon: 'search-x', title: 'No readings found', body: 'Try changing your search or filters.' });
+        tbody.innerHTML = `<tr><td colspan="10">${empty}</td></tr>`;
+        cards.innerHTML = empty;
+        UI.refreshIcons();
         this.updatePaginationUI(pagination);
+        this.updateSelectionUI();
         return;
       }
 
+      const amountOf = (e) => e.status === 'profit'
+        ? `<span class="font-semibold text-good">+${currency}${e.revenue}</span>`
+        : (e.status === 'loss'
+          ? `<span class="font-semibold text-bad">-${currency}${e.payable}</span>`
+          : `<span class="text-ink-2">${currency}0.00</span>`);
+
       tbody.innerHTML = entries.map(e => {
         const isChecked = this.selectedIds.has(e.id);
-        let badgeClass = 'badge-balanced';
-        if (e.status === 'profit') badgeClass = 'badge-profit';
-        if (e.status === 'loss') badgeClass = 'badge-loss';
-
-        const financialStr = e.status === 'profit' 
-          ? `<span style="color: var(--success-600); font-weight: 700;">+${currency}${e.revenue}</span>`
-          : (e.status === 'loss' 
-            ? `<span style="color: var(--danger-600); font-weight: 700;">-${currency}${e.payable}</span>` 
-            : `<span>${currency}0.00</span>`);
-
         return `
           <tr>
-            <td style="text-align: center;">
-              <input type="checkbox" class="entry-row-checkbox" data-id="${e.id}" ${isChecked ? 'checked' : ''} />
+            <td class="text-center print:hidden">
+              <input type="checkbox" class="entry-row-checkbox check" data-id="${escapeHtml(e.id)}" ${isChecked ? 'checked' : ''} aria-label="Select reading ${escapeHtml(e.entry_date)}" />
             </td>
-            <td style="font-weight: 600;">${e.entry_date}</td>
-            <td style="color: var(--primary-600); font-weight: 600;">${e.generated_units} kWh</td>
-            <td style="color: var(--text-secondary);">${e.consumed_units} kWh</td>
-            <td style="font-weight: 600;">${e.net_units > 0 ? '+' : ''}${e.net_units} kWh</td>
-            <td style="font-size: 0.85rem; color: var(--text-secondary);">${currency}${e.buying_rate} / ${currency}${e.selling_rate}</td>
-            <td>${financialStr}</td>
-            <td><span class="badge ${badgeClass}">${e.status}</span></td>
-            <td style="max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.85rem; color: var(--text-secondary);">${e.notes || '-'}</td>
-            <td style="text-align: right;">
-              <button class="btn btn-outline btn-sm edit-entry-btn" data-id="${e.id}" title="Edit">
-                <i data-lucide="edit-3"></i>
-              </button>
-              <button class="btn btn-outline btn-sm delete-entry-btn" data-id="${e.id}" title="Delete" style="color: var(--danger-600);">
-                <i data-lucide="trash-2"></i>
-              </button>
+            <td class="font-semibold">${escapeHtml(e.entry_date)}</td>
+            <td class="font-medium text-good">${e.generated_units}</td>
+            <td class="font-medium text-bad">${e.consumed_units}</td>
+            <td class="font-semibold ${UI.tone(e.net_units)}">${UI.signed(e.net_units)}</td>
+            <td class="text-xs text-ink-2">${currency}${e.buying_rate} / ${currency}${e.selling_rate}</td>
+            <td>${amountOf(e)}</td>
+            <td>${UI.statusBadge(e.status)}</td>
+            <td class="max-w-40 truncate text-xs text-ink-2">${escapeHtml(e.notes || '-')}</td>
+            <td class="text-right print:hidden">
+              <button class="btn btn-ghost btn-icon edit-entry-btn" data-id="${escapeHtml(e.id)}" aria-label="Edit reading ${escapeHtml(e.entry_date)}">${UI.icon('pencil')}</button>
+              <button class="btn btn-ghost btn-icon delete-entry-btn text-bad!" data-id="${escapeHtml(e.id)}" aria-label="Delete reading ${escapeHtml(e.entry_date)}">${UI.icon('trash-2')}</button>
             </td>
           </tr>
         `;
       }).join('');
 
-      if (window.lucide) lucide.createIcons();
+      cards.innerHTML = entries.map(e => {
+        const isChecked = this.selectedIds.has(e.id);
+        return `
+          <article class="flex items-start gap-3 px-4 pt-1 pb-3">
+            <input type="checkbox" class="entry-row-checkbox check mt-3 hidden group-data-selecting/list:block" data-id="${escapeHtml(e.id)}" ${isChecked ? 'checked' : ''} aria-label="Select reading ${escapeHtml(e.entry_date)}" />
+            <div class="min-w-0 flex-1">
+              <div class="flex min-h-11 items-center justify-between gap-2">
+                <div class="flex min-w-0 items-center gap-2">
+                  <h3 class="truncate text-sm font-semibold">${UI.dateLong(e.entry_date)}</h3>
+                  ${UI.statusBadge(e.status)}
+                </div>
+                <div class="-mr-2 flex shrink-0 group-data-selecting/list:hidden">
+                  <button class="btn btn-ghost btn-icon edit-entry-btn" data-id="${escapeHtml(e.id)}" aria-label="Edit reading ${escapeHtml(e.entry_date)}">${UI.icon('pencil')}</button>
+                  <button class="btn btn-ghost btn-icon delete-entry-btn text-bad!" data-id="${escapeHtml(e.id)}" aria-label="Delete reading ${escapeHtml(e.entry_date)}">${UI.icon('trash-2')}</button>
+                </div>
+              </div>
+              <div class="grid grid-cols-4 gap-2 text-sm tabular-nums">
+                <div class="min-w-0"><div class="text-xs text-ink-3">Export</div><div class="truncate font-medium text-good">${e.generated_units}</div></div>
+                <div class="min-w-0"><div class="text-xs text-ink-3">Import</div><div class="truncate font-medium text-bad">${e.consumed_units}</div></div>
+                <div class="min-w-0"><div class="text-xs text-ink-3">Net</div><div class="truncate font-semibold ${UI.tone(e.net_units)}">${UI.signed(e.net_units)}</div></div>
+                <div class="min-w-0 text-right"><div class="text-xs text-ink-3">Amount</div><div class="truncate">${amountOf(e)}</div></div>
+              </div>
+              ${e.notes ? `<p class="mt-1.5 truncate text-xs text-ink-3">${escapeHtml(e.notes)}</p>` : ''}
+            </div>
+          </article>
+        `;
+      }).join('');
 
-      // Row Checkboxes & Action handlers
+      UI.refreshIcons();
+
+      // Row Checkboxes & Action handlers (table and card versions stay in sync)
       document.querySelectorAll('.entry-row-checkbox').forEach(cb => {
         cb.onchange = (e) => {
           const id = cb.getAttribute('data-id');
@@ -265,6 +339,9 @@ const HistoryView = {
           } else {
             this.selectedIds.delete(id);
           }
+          document.querySelectorAll('.entry-row-checkbox').forEach(other => {
+            if (other.getAttribute('data-id') === id) other.checked = e.target.checked;
+          });
           this.updateSelectionUI();
         };
       });
@@ -284,6 +361,8 @@ const HistoryView = {
               await API.deleteEntry(id);
               Toast.success('Entry deleted successfully.');
               this.selectedIds.delete(id);
+              // Don't stay on a page that no longer has rows
+              if (this.currentEntries.length === 1 && this.queryParams.page > 1) this.queryParams.page--;
               this.loadHistoryData();
             } catch (err) {
               Toast.error('Failed to delete entry');
@@ -296,6 +375,10 @@ const HistoryView = {
       this.updateSelectionUI();
     } catch (err) {
       console.error('Failed to load history data:', err);
+      if (!document.contains(tbody)) return;
+      tbody.innerHTML = '<tr><td colspan="10" id="history-table-error"></td></tr>';
+      UI.loadError(document.getElementById('history-table-error'), () => this.loadHistoryData());
+      UI.loadError(cards, () => this.loadHistoryData());
     }
   },
 
@@ -309,6 +392,11 @@ const HistoryView = {
       bulkCountSpan.textContent = `Delete Selected (${count})`;
     } else {
       bulkBtn.style.display = 'none';
+    }
+
+    const selectAll = document.getElementById('select-all-checkbox');
+    if (selectAll) {
+      selectAll.checked = this.currentEntries.length > 0 && this.currentEntries.every(e => this.selectedIds.has(e.id));
     }
   },
 
@@ -324,14 +412,32 @@ const HistoryView = {
     document.getElementById('next-page-btn').disabled = page >= totalPages;
   },
 
-  exportCSV() {
-    if (this.currentEntries.length === 0) {
+  async exportCSV() {
+    // Export every row matching the current filters, not just the visible page
+    let entries;
+    try {
+      const params = { ...this.queryParams, page: 1, limit: 1000 };
+      Object.keys(params).forEach(k => { if (params[k] === '' || params[k] === null) delete params[k]; });
+      const res = await API.getEntries(params);
+      entries = res.entries || [];
+    } catch (err) {
+      return; // API.request already showed the error
+    }
+
+    if (entries.length === 0) {
       Toast.error('No data available to export.');
       return;
     }
 
+    // Quote every cell; prefix values Excel would treat as formulas (CSV injection)
+    const cell = (value) => {
+      let text = String(value ?? '');
+      if (/^[=+\-@\t\r]/.test(text) && isNaN(Number(text))) text = "'" + text;
+      return `"${text.replace(/"/g, '""')}"`;
+    };
+
     const headers = ['Date', 'Generated Units (kWh)', 'Consumed Units (kWh)', 'Net Units (kWh)', 'Buying Rate', 'Selling Rate', 'Revenue', 'Payable', 'Status', 'Notes'];
-    const rows = this.currentEntries.map(e => [
+    const rows = entries.map(e => [
       e.entry_date,
       e.generated_units,
       e.consumed_units,
@@ -341,18 +447,20 @@ const HistoryView = {
       e.revenue,
       e.payable,
       e.status,
-      `"${(e.notes || '').replace(/"/g, '""')}"`
-    ]);
+      e.notes || ''
+    ].map(cell));
 
-    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
-    const encodedUri = encodeURI(csvContent);
+    const csvContent = [headers.map(cell).join(','), ...rows.map(r => r.join(','))].join('\n');
+    // Blob URL instead of a data: URI (a '#' in a note would truncate a data: URI)
+    const url = URL.createObjectURL(new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8' }));
     const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `solar_history_${new Date().toISOString().split('T')[0]}.csv`);
+    link.href = url;
+    link.setAttribute('download', `solar_history_${localDateStr()}.csv`);
     document.body.appendChild(link);
     link.click();
     link.remove();
-    Toast.success('CSV exported successfully!');
+    URL.revokeObjectURL(url);
+    Toast.success(`Exported ${entries.length} entries to CSV.`);
   },
 
   exportPDF() {

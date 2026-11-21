@@ -29,3 +29,6 @@ logs
 # Temp & Scratch files
 tmp/
 temp/
+
+# Local data cache (contains real readings)
+server/data/local_store.json

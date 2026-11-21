@@ -2,135 +2,83 @@
 <html lang="en" data-theme="light">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <meta name="description" content="Solar Revenue Tracker - Enterprise Web Application for rooftop solar daily generation, grid consumption, financial revenue and net profit analytics.">
-  <title>Solar Revenue Tracker - Enterprise SaaS</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#ffffff" id="meta-theme-color">
+  <meta name="description" content="Track rooftop solar generation, grid consumption, settlement and electricity bills.">
+  <title>Solar Revenue Tracker</title>
 
-  <!-- Google Fonts: Inter -->
+  <!-- Apply the saved theme before first paint to avoid a light flash -->
+  <script>
+    try { document.documentElement.setAttribute('data-theme', localStorage.getItem('solar_theme') || 'light'); } catch (e) {}
+  </script>
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-  <!-- Lucide Icons -->
-  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://unpkg.com/lucide@1.74.0"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.6.1"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
-  <!-- Chart.js -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-  <!-- Supabase JS Client -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-  <!-- Application Styles -->
-  <link rel="stylesheet" href="assets/css/variables.css">
-  <link rel="stylesheet" href="assets/css/main.css">
-  <link rel="stylesheet" href="assets/css/components.css">
-  <link rel="stylesheet" href="assets/css/views.css">
+  <!-- Tailwind build (npm run build:css) -->
+  <link rel="stylesheet" href="assets/css/app.css">
+  <!-- A4 layout of the PDF/print statements only -->
+  <link rel="stylesheet" href="assets/css/report-document.css">
 </head>
 <body>
-  <div id="app-container">
-    <!-- Sidebar Navigation (Desktop / Tablet Drawer) -->
-    <aside id="sidebar" class="sidebar">
-      <div class="sidebar-header">
-        <div class="brand-icon"><i data-lucide="sun"></i></div>
-        <span class="brand-title">Solar Revenue</span>
+  <div id="app-container" class="min-h-dvh lg:flex">
+
+    <!-- Desktop sidebar -->
+    <aside id="sidebar" class="hidden shrink-0 flex-col border-r border-line bg-surface lg:sticky lg:top-0 lg:flex lg:h-dvh lg:w-60 print:hidden">
+      <div class="flex h-16 items-center gap-2.5 px-5">
+        <span class="grid size-8 place-items-center rounded-lg bg-accent-soft text-accent"><i data-lucide="sun" aria-hidden="true"></i></span>
+        <span class="text-[0.9375rem] font-semibold">Solar Tracker</span>
       </div>
 
-      <nav class="sidebar-nav">
-        <a href="#dashboard" class="nav-item active" data-route="dashboard">
-          <i data-lucide="layout-dashboard"></i>
-          <span>Dashboard</span>
-        </a>
-
-        <a href="#entry" class="nav-item" data-route="entry">
-          <i data-lucide="plus-circle"></i>
-          <span>Daily Entry</span>
-        </a>
-
-        <a href="#history" class="nav-item" data-route="history">
-          <i data-lucide="file-text"></i>
-          <span>History</span>
-        </a>
-
-        <a href="#reports" class="nav-item" data-route="reports">
-          <i data-lucide="bar-chart-3"></i>
-          <span>Reports</span>
-        </a>
-
-        <a href="#analytics" class="nav-item" data-route="analytics">
-          <i data-lucide="pie-chart"></i>
-          <span>Analytics</span>
-        </a>
-
-        <a href="#calendar" class="nav-item" data-route="calendar">
-          <i data-lucide="calendar"></i>
-          <span>Calendar</span>
-        </a>
-
-        <a href="#settings" class="nav-item" data-route="settings">
-          <i data-lucide="settings"></i>
-          <span>Settings</span>
-        </a>
+      <nav class="flex flex-1 flex-col gap-1 overflow-y-auto px-3 py-2" aria-label="Main">
+        <a href="#dashboard" class="nav-item side-link" data-route="dashboard"><i data-lucide="house" aria-hidden="true"></i><span>Dashboard</span></a>
+        <a href="#entry" class="nav-item side-link" data-route="entry"><i data-lucide="plus-circle" aria-hidden="true"></i><span>Daily Entry</span></a>
+        <a href="#history" class="nav-item side-link" data-route="records"><i data-lucide="notebook-tabs" aria-hidden="true"></i><span>Records</span></a>
+        <a href="#reports" class="nav-item side-link" data-route="reports"><i data-lucide="bar-chart-3" aria-hidden="true"></i><span>Reports</span></a>
+        <a href="#calendar" class="nav-item side-link" data-route="calendar"><i data-lucide="calendar" aria-hidden="true"></i><span>Calendar</span></a>
+        <a href="#settings" class="nav-item side-link" data-route="settings"><i data-lucide="settings" aria-hidden="true"></i><span>Settings</span></a>
       </nav>
-
-      <div class="sidebar-footer">
-        <div style="font-size: 0.78rem; color: #64748b; text-align: center;">
-          Solar Revenue Tracker v1.0 Enterprise
-        </div>
-      </div>
     </aside>
 
-    <!-- Main Content Area -->
-    <div class="main-wrapper">
-      <!-- Top Sticky Header -->
-      <header id="top-header" class="top-header">
-        <div class="header-left">
-          <button id="mobile-menu-toggle" class="mobile-menu-btn" title="Open Navigation Menu">
-            <i data-lucide="menu"></i>
-          </button>
-          <div class="header-title-section">
-            <h1 id="header-view-title">Dashboard</h1>
-          </div>
+    <div class="flex min-h-dvh min-w-0 flex-1 flex-col">
+      <!-- App bar -->
+      <header id="top-header" class="pt-safe sticky top-0 z-30 flex items-center justify-between gap-3 border-b border-line bg-surface pr-2 pl-4 md:px-6 lg:px-8 print:hidden">
+        <div class="flex h-14 min-w-0 items-center gap-2.5 lg:h-16">
+          <span class="grid size-8 shrink-0 place-items-center rounded-lg bg-accent-soft text-accent lg:hidden" aria-hidden="true"><i data-lucide="sun"></i></span>
+          <h1 id="header-view-title" class="truncate text-lg font-semibold tracking-tight lg:text-xl">Dashboard</h1>
         </div>
 
-        <div class="header-right">
-          <button id="header-theme-toggle" class="theme-toggle-btn" title="Toggle Dark/Light Mode">
-            <i data-lucide="moon"></i>
+        <div class="flex shrink-0 items-center gap-1">
+          <button id="header-theme-toggle" class="btn btn-ghost btn-icon" type="button" aria-label="Switch between light and dark theme">
+            <i data-lucide="moon" aria-hidden="true"></i>
           </button>
-
-          <div class="user-profile-badge">
-            <div id="header-user-avatar" class="user-avatar">P</div>
-            <span id="header-user-email" class="user-email">Prit@solar.com</span>
-          </div>
+          <a href="#settings" data-route="settings" class="nav-item flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-control md:px-2 md:hover:bg-subtle" aria-label="Account settings">
+            <span id="header-user-avatar" class="grid size-8 place-items-center rounded-full bg-primary text-sm font-semibold text-on-primary" aria-hidden="true">S</span>
+            <span id="header-user-email" class="hidden max-w-48 truncate text-sm font-medium text-ink-2 md:block"></span>
+          </a>
         </div>
       </header>
 
-      <!-- View Content Body -->
-      <main id="content-area" class="content-body">
-        <!-- Dynamic view content rendered by Router -->
-      </main>
+      <main id="content-area" class="mx-auto w-full max-w-6xl flex-1 px-4 pt-4 pb-tabbar md:px-6 md:pt-6 lg:px-8 lg:pb-10"></main>
 
-      <!-- Mobile Bottom Navigation Bar (App-like feel for smartphones) -->
-      <nav id="mobile-bottom-nav" class="mobile-bottom-nav">
-        <a href="#dashboard" class="mobile-nav-item nav-item active" data-route="dashboard">
-          <i data-lucide="layout-dashboard"></i>
-          <span>Home</span>
-        </a>
-        <a href="#entry" class="mobile-nav-item nav-item" data-route="entry">
-          <i data-lucide="plus-circle"></i>
-          <span>Add</span>
-        </a>
-        <a href="#history" class="mobile-nav-item nav-item" data-route="history">
-          <i data-lucide="file-text"></i>
-          <span>History</span>
-        </a>
-        <a href="#reports" class="mobile-nav-item nav-item" data-route="reports">
-          <i data-lucide="bar-chart-3"></i>
-          <span>Reports</span>
-        </a>
-        <a href="#settings" class="mobile-nav-item nav-item" data-route="settings">
-          <i data-lucide="settings"></i>
-          <span>Settings</span>
-        </a>
+      <!-- Phone / tablet tab bar -->
+      <nav id="mobile-bottom-nav" class="pb-safe fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface lg:hidden print:hidden" aria-label="Primary">
+        <div class="mx-auto flex h-16 max-w-xl items-center px-1">
+          <a href="#dashboard" class="nav-item tab-link" data-route="dashboard"><span class="tab-icon"><i data-lucide="house" aria-hidden="true"></i></span><span>Home</span></a>
+          <a href="#history" class="nav-item tab-link" data-route="records"><span class="tab-icon"><i data-lucide="notebook-tabs" aria-hidden="true"></i></span><span>Records</span></a>
+          <a href="#entry" class="nav-item tab-link tab-add" data-route="entry" aria-label="Add daily reading">
+            <span class="tab-add-icon"><i data-lucide="plus" aria-hidden="true"></i></span>
+            <span>Add</span>
+          </a>
+          <a href="#reports" class="nav-item tab-link" data-route="reports"><span class="tab-icon"><i data-lucide="bar-chart-3" aria-hidden="true"></i></span><span>Reports</span></a>
+          <a href="#settings" class="nav-item tab-link" data-route="settings"><span class="tab-icon"><i data-lucide="settings" aria-hidden="true"></i></span><span>Settings</span></a>
+        </div>
       </nav>
     </div>
   </div>
@@ -138,11 +86,15 @@
   <!-- JS Dependencies & Modules -->
   <script src="assets/js/config.js"></script>
   <script src="assets/js/state.js"></script>
+  <script src="assets/js/components/ui.js"></script>
   <script src="assets/js/components/toast.js"></script>
   <script src="assets/js/components/modal.js"></script>
   <script src="assets/js/components/skeleton.js"></script>
+  <script src="assets/js/components/crystalReportPdf.js"></script>
+  <script src="assets/js/components/settlementReportPdf.js"></script>
   <script src="assets/js/api.js"></script>
   <script src="assets/js/auth.js"></script>
+  <script src="assets/js/components/billPanel.js"></script>
 
   <!-- Views -->
   <script src="assets/js/views/authView.js"></script>
@@ -150,9 +102,10 @@
   <script src="assets/js/views/entryView.js"></script>
   <script src="assets/js/views/historyView.js"></script>
   <script src="assets/js/views/reportsView.js"></script>
-  <script src="assets/js/views/analyticsView.js"></script>
   <script src="assets/js/views/calendarView.js"></script>
   <script src="assets/js/views/settingsView.js"></script>
+  <script src="assets/js/views/settlementView.js"></script>
+  <script src="assets/js/views/recordsView.js"></script>
 
   <!-- Router Initialization -->
   <script src="assets/js/router.js"></script>
@@ -166,38 +119,56 @@
       Modal.init();
       Auth.init();
 
-      const themeBtn = document.getElementById('header-theme-toggle');
+      // Globally disable mouse wheel scroll changing number input values
+      document.addEventListener('wheel', () => {
+        if (document.activeElement && document.activeElement.tagName === 'INPUT' && document.activeElement.type === 'number') {
+          document.activeElement.blur();
+        }
+      }, { passive: true });
 
-      function updateThemeIcon(theme) {
-        const btn = themeBtn || document.getElementById('header-theme-toggle');
-        if (!btn) return;
-        btn.innerHTML = theme === 'dark' ? '<i data-lucide="sun"></i>' : '<i data-lucide="moon"></i>';
+      // Hide the tab bar while typing so it doesn't sit on top of the phone keyboard
+      const isTypingField = (el) => el && (el.tagName === 'TEXTAREA' ||
+        (el.tagName === 'INPUT' && !['checkbox', 'radio', 'file', 'date', 'button', 'submit'].includes(el.type)));
+      document.addEventListener('focusin', (e) => {
+        if (isTypingField(e.target)) document.body.setAttribute('data-typing', '');
+      });
+      // Delayed: bringing the tab bar back mid-tap would shift sticky buttons out from under the finger
+      document.addEventListener('focusout', () => {
+        setTimeout(() => {
+          if (!isTypingField(document.activeElement)) document.body.removeAttribute('data-typing');
+        }, 250);
+      });
+
+      const themeBtn = document.getElementById('header-theme-toggle');
+      let renderedTheme = null;
+
+      function applyThemeChrome(theme) {
+        if (theme === renderedTheme) return;
+        const isFirstRender = renderedTheme === null;
+        renderedTheme = theme;
+        themeBtn.innerHTML = `<i data-lucide="${theme === 'dark' ? 'sun' : 'moon'}" aria-hidden="true"></i>`;
+        document.getElementById('meta-theme-color').content = theme === 'dark' ? '#141c2c' : '#ffffff';
         if (window.lucide) lucide.createIcons();
+        // Charts are drawn with theme colors, so redraw them
+        if (!isFirstRender) {
+          const route = appState.getState().currentView;
+          if (route === 'reports' && ReportsView.currentReportData) {
+            ReportsView.renderChart(ReportsView.currentReportData.grouped, escapeHtml(appState.getState().settings.currency || '₹'));
+          }
+        }
       }
 
       const savedTheme = localStorage.getItem('solar_theme') || 'light';
       document.documentElement.setAttribute('data-theme', savedTheme);
-      updateThemeIcon(savedTheme);
+      applyThemeChrome(savedTheme);
 
-      const mobileBtn = document.getElementById('mobile-menu-toggle');
-      if (mobileBtn) {
-        mobileBtn.onclick = () => {
-          document.getElementById('sidebar').classList.toggle('mobile-open');
-        };
-      }
-
-      if (themeBtn) {
-        themeBtn.onclick = () => {
-          const current = document.documentElement.getAttribute('data-theme');
-          const next = current === 'dark' ? 'light' : 'dark';
-          document.documentElement.setAttribute('data-theme', next);
-          localStorage.setItem('solar_theme', next);
-          appState.setState({ theme: next });
-          updateThemeIcon(next);
-        };
-      }
+      themeBtn.onclick = () => {
+        const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+        appState.setState({ theme: next });
+      };
 
       appState.subscribe(state => {
+        applyThemeChrome(state.theme);
         const userEmailEl = document.getElementById('header-user-email');
         const userAvatarEl = document.getElementById('header-user-avatar');
         if (state.user && state.user.email) {
@@ -206,12 +177,10 @@
         }
       });
 
-      try {
-        const settingsRes = await API.getSettings();
-        if (settingsRes && settingsRes.data) {
-          appState.setState({ settings: settingsRes.data });
-        }
-      } catch (e) {}
+      // Settings need a session; after sign-in they are loaded by Auth.loadSettings()
+      if (appState.getState().token) {
+        await Auth.loadSettings();
+      }
 
       Router.init();
       Router.handleLocation();

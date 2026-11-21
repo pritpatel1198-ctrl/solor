@@ -1,0 +1,302 @@
+/*
+ * Solar Revenue Tracker: Tailwind entry point.
+ * Build with `npm run build:css` (output: client/assets/css/app.css).
+ * Mobile-first: unprefixed utilities are the phone layout; md: is tablet, lg: is desktop.
+ */
+@import "tailwindcss" source(none);
+@source "../index.html";
+@source "../assets/js/**/*.js";
+
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/* Semantic tokens only. Default palette removed so screens can't drift to ad-hoc colors. */
+@theme inline {
+  --color-*: initial;
+  --color-transparent: transparent;
+  --color-white: #ffffff;
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-subtle: var(--subtle);
+  --color-line: var(--line);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-on-primary: var(--on-primary);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-good: var(--good);
+  --color-good-soft: var(--good-soft);
+  --color-bad: var(--bad);
+  --color-bad-soft: var(--bad-soft);
+  --color-scrim: var(--scrim);
+  --color-hero: var(--hero);
+  --color-on-hero: var(--on-hero);
+  --color-on-hero-2: var(--on-hero-2);
+  --color-hero-line: var(--hero-line);
+  --color-hero-cta: var(--hero-cta);
+  --color-on-hero-cta: var(--on-hero-cta);
+  --color-hero-good: var(--hero-good);
+  --color-hero-bad: var(--hero-bad);
+
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+  --radius-control: 0.625rem;
+  --radius-card: 0.875rem;
+  --radius-sheet: 1.25rem;
+
+  --shadow-card: 0 1px 2px rgb(15 23 42 / 0.05);
+  --shadow-float: 0 8px 24px rgb(15 23 42 / 0.16);
+}
+
+@layer base {
+  :root {
+    color-scheme: light;
+    --canvas: #f5f6f8;
+    --surface: #ffffff;
+    --subtle: #eef1f5;
+    --line: #dfe4ea;
+    --ink: #0f172a;
+    --ink-2: #414e60;
+    --ink-3: #5b6878;
+    --primary: #0f172a;
+    --primary-hover: #1e293b;
+    --on-primary: #ffffff;
+    --accent: #a16207;
+    --accent-soft: #fdf3d7;
+    --good: #15703a;
+    --good-soft: #dff3e6;
+    --bad: #b42318;
+    --bad-soft: #fde8e6;
+    --scrim: rgb(15 23 42 / 0.5);
+    --hero: #10203a;
+    --on-hero: #ffffff;
+    --on-hero-2: #b9c6d8;
+    --hero-line: #2c3f5c;
+    --hero-cta: #f5bf42;
+    --on-hero-cta: #231a04;
+    --hero-good: #5fd38d;
+    --hero-bad: #ff8d84;
+    /* Page space reserved for the phone tab bar (constant, so the page never jumps) */
+    --tabbar-space: calc(4rem + env(safe-area-inset-bottom));
+    /* Where sticky bars sit: above the tab bar, or at the bottom edge while typing */
+    --tabbar: var(--tabbar-space);
+  }
+
+  [data-theme="dark"] {
+    color-scheme: dark;
+    --canvas: #0b1120;
+    --surface: #141c2c;
+    --subtle: #1e2839;
+    --line: #2d394c;
+    --ink: #f1f5f9;
+    --ink-2: #c3cedb;
+    --ink-3: #9aa8ba;
+    --primary: #f1f5f9;
+    --primary-hover: #dbe3ec;
+    --on-primary: #0f172a;
+    --accent: #f5bf42;
+    --accent-soft: #33290f;
+    --good: #5fd38d;
+    --good-soft: #12301f;
+    --bad: #ff8d84;
+    --bad-soft: #3b1a1a;
+    --scrim: rgb(2 6 16 / 0.7);
+    --hero: #1b2a44;
+    --on-hero: #ffffff;
+    --on-hero-2: #c3cfdf;
+    --hero-line: #354866;
+    --hero-cta: #f5bf42;
+    --on-hero-cta: #231a04;
+    --hero-good: #5fd38d;
+    --hero-bad: #ff8d84;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+    /* Focused fields and scrolled-to elements stay clear of the app bar and bottom bars */
+    scroll-padding-top: 4.5rem;
+    scroll-padding-bottom: 10rem;
+  }
+
+  @media (min-width: 1024px) {
+    html {
+      scroll-padding-bottom: 1rem;
+    }
+  }
+
+  body {
+    @apply bg-canvas font-sans text-ink antialiased;
+  }
+
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-accent;
+  }
+
+  /* Lucide replaces <i> with <svg>; keep icons a consistent size unless a utility overrides it */
+  svg.lucide {
+    @apply size-5 shrink-0;
+  }
+
+  button,
+  summary,
+  label[for],
+  select,
+  [role="button"] {
+    @apply cursor-pointer;
+  }
+
+  button:disabled {
+    @apply cursor-not-allowed;
+  }
+
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button {
+    appearance: none;
+    margin: 0;
+  }
+
+  input[type="number"] {
+    appearance: textfield;
+  }
+
+  summary::-webkit-details-marker {
+    display: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@layer components {
+  /* Buttons: 44px minimum touch target */
+  .btn {
+    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-control border border-transparent px-4 text-sm font-semibold whitespace-nowrap transition-colors duration-150 select-none active:opacity-80 disabled:opacity-50;
+  }
+  .btn svg.lucide { @apply size-4; }
+  .btn-primary { @apply bg-primary text-on-primary hover:bg-primary-hover; }
+  .btn-outline { @apply border-line bg-surface text-ink hover:bg-subtle; }
+  .btn-ghost { @apply text-ink-2 hover:bg-subtle hover:text-ink; }
+  .btn-danger { @apply bg-bad-soft text-bad hover:opacity-90; }
+  .btn-icon { @apply w-11 px-0; }
+  .btn-block { @apply w-full; }
+
+  /* Surfaces */
+  .card { @apply rounded-card border border-line bg-surface shadow-card; }
+  .card-header { @apply flex items-center justify-between gap-3 border-b border-line px-4 py-3 md:px-5; }
+  .card-title { @apply flex min-w-0 items-center gap-2 text-[0.9375rem] font-semibold text-ink; }
+  .card-body { @apply p-4 md:p-5; }
+
+  /* The one strong surface per screen: the money answer */
+  .hero { @apply rounded-sheet bg-hero p-5 text-on-hero shadow-float md:p-6; }
+  .hero-cta { @apply bg-hero-cta text-on-hero-cta hover:opacity-90; }
+  .hero-secondary { @apply border-hero-line bg-transparent text-on-hero hover:bg-hero-line; }
+  .hero-pill { @apply inline-flex items-center rounded-full bg-hero-line px-2.5 py-0.5 text-xs font-semibold text-on-hero; }
+  .hero-pill-good { background-color: #1d5a3c; color: #c8f7da; }
+  .hero-pill-bad { background-color: #6f2a2a; color: #ffdcd8; }
+
+  /* Forms: 16px text on phones stops iOS zooming on focus */
+  .field { @apply flex min-w-0 flex-col gap-1.5; }
+  .label { @apply text-[0.8125rem] font-medium text-ink-2; }
+  .hint { @apply text-xs text-ink-3; }
+  .input {
+    @apply block min-h-11 w-full min-w-0 rounded-control border border-line bg-surface px-3 text-base text-ink tabular-nums transition-colors duration-150 placeholder:text-ink-3 focus:border-accent focus:outline-2 focus:-outline-offset-1 focus:outline-accent md:text-sm;
+  }
+  textarea.input { @apply py-2.5; }
+  select.input { @apply pr-8; }
+  .check { @apply size-5 rounded accent-(--accent); }
+
+  /* Status */
+  .badge { @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap capitalize; }
+  .badge-profit { @apply bg-good-soft text-good; }
+  .badge-loss { @apply bg-bad-soft text-bad; }
+  .badge-balanced { @apply bg-subtle text-ink-2; }
+
+  /* Metric tile */
+  .stat { @apply flex min-w-0 flex-col gap-1 rounded-card border border-line bg-surface p-3.5 shadow-card md:p-4; }
+  .stat-label { @apply flex items-center gap-1.5 text-xs font-medium text-ink-3; }
+  .stat-label svg.lucide { @apply size-3.5; }
+  .stat-value { @apply truncate text-xl font-semibold tracking-tight text-ink tabular-nums md:text-2xl; }
+  .stat-foot { @apply text-xs text-ink-3; }
+
+  /* Label/value row used in phone cards and sheets */
+  .kv { @apply flex items-baseline justify-between gap-4 py-2 text-sm; }
+  .kv > :first-child { @apply text-ink-3; }
+  .kv > :last-child { @apply text-right font-medium text-ink tabular-nums; }
+
+  /* Tables are tablet/desktop only; phones get card lists */
+  .table-wrap { @apply overflow-x-auto; }
+  .data-table { @apply w-full border-collapse text-sm tabular-nums; }
+  .data-table th { @apply border-b border-line bg-subtle px-3 py-2.5 text-left text-xs font-semibold whitespace-nowrap text-ink-2; }
+  .data-table td { @apply border-b border-line px-3 py-2.5 whitespace-nowrap text-ink; }
+  .data-table tbody tr:last-child td { @apply border-b-0; }
+  .data-table tbody tr { @apply hover:bg-subtle/60; }
+  .data-table .num { @apply text-right; }
+  .sortable-th { @apply cursor-pointer select-none hover:text-ink; }
+  .sortable-th svg.lucide { @apply ml-1 inline size-3.5; }
+
+  /* Horizontal-scrolling chips */
+  .chip-row { @apply -mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] md:mx-0 md:flex-wrap md:px-0 [&::-webkit-scrollbar]:hidden; }
+  .chip { @apply inline-flex min-h-10 shrink-0 items-center rounded-full border border-line bg-surface px-3.5 text-sm font-medium whitespace-nowrap text-ink-2 transition-colors duration-150 hover:bg-subtle; }
+  .chip.active { @apply border-primary bg-primary text-on-primary hover:bg-primary; }
+
+  /* Two-option segmented control */
+  .segmented { @apply grid grid-flow-col auto-cols-fr gap-1 rounded-control bg-subtle p-1; }
+  .segment { @apply inline-flex min-h-10 items-center justify-center gap-1.5 rounded-lg px-2 text-sm font-medium text-ink-2 transition-colors duration-150; }
+  .segment svg.lucide { @apply size-4; }
+  .segment.active { @apply bg-surface text-ink shadow-card; }
+
+  /* Navigation */
+  .side-link { @apply flex min-h-11 items-center gap-3 rounded-control px-3 text-sm font-medium text-ink-2 transition-colors duration-150 hover:bg-subtle hover:text-ink; }
+  .side-link.active { @apply bg-primary text-on-primary hover:bg-primary hover:text-on-primary; }
+  .tab-link { @apply flex min-h-14 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 text-[0.6875rem] font-medium text-ink-3 transition-colors duration-150; }
+  .tab-link.active { @apply font-semibold text-ink; }
+  .tab-icon { @apply grid h-7 w-12 place-items-center rounded-full transition-colors duration-150; }
+  .tab-link.active .tab-icon { @apply bg-accent-soft text-accent; }
+  .tab-add-icon { @apply grid h-9 w-12 place-items-center rounded-xl bg-primary text-on-primary transition-colors duration-150; }
+
+  /* Calendar */
+  .calendar-grid { @apply grid grid-cols-7 gap-1 md:gap-2; }
+  .calendar-cell { @apply flex aspect-square min-h-11 min-w-0 cursor-pointer flex-col items-center justify-center gap-1 rounded-control border border-transparent bg-subtle/60 p-0.5 text-ink transition-colors duration-150 hover:border-line md:aspect-auto md:min-h-24 md:items-stretch md:justify-start md:bg-surface md:p-2 md:border-line md:hover:bg-subtle; }
+  .calendar-cell.other-month { @apply bg-transparent text-ink-3 opacity-50; }
+  .calendar-cell.today { @apply border-accent md:border-accent; }
+
+  .skeleton { @apply animate-pulse rounded bg-subtle; }
+}
+
+@utility pb-tabbar {
+  padding-bottom: calc(var(--tabbar-space) + 1.25rem);
+}
+
+@utility bottom-tabbar {
+  bottom: var(--tabbar);
+}
+
+@utility pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+@utility pt-safe {
+  padding-top: env(safe-area-inset-top);
+}
+
+/* While a phone keyboard is open, the tab bar steps aside and sticky bars drop to the bottom */
+@layer base {
+  body[data-typing] {
+    --tabbar: 0px;
+  }
+  @media (max-width: 1023.98px) {
+    body[data-typing] #mobile-bottom-nav {
+      display: none;
+    }
+  }
+}

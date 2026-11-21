@@ -1,315 +1,180 @@
 /**
  * Dashboard View Component
+ * Answers, in order: how much money is left, is today's reading done,
+ * how this month looks, what the last bills were, and the latest readings.
  */
 const DashboardView = {
   async render(container) {
-    const currency = appState.getState().settings.currency || '₹';
-
     container.innerHTML = `
-      <div class="view-header" style="margin-bottom: 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
-        <div>
-          <h2 style="font-size: 1.5rem; font-weight: 800; color: var(--text-primary);">Dashboard</h2>
-          <p style="color: var(--text-secondary); font-size: 0.9rem;">Overview of your solar generation, grid consumption, and net earnings.</p>
-        </div>
-        <button id="quick-add-entry-btn" class="btn btn-primary">
-          <i data-lucide="plus"></i>
-          <span>Add Daily Entry</span>
-        </button>
-      </div>
-
-      <!-- KPI Cards Grid -->
-      <div id="dashboard-kpi-grid" class="dashboard-grid">
-        ${Skeleton.renderKpiCards(8)}
-      </div>
-
-      <!-- Quick Entry & Recent Entries Row -->
-      <div class="dashboard-row">
-        <!-- Recent Entries Card -->
-        <div class="card">
-          <div class="card-header">
-            <h3 class="card-title">Recent Meter Entries</h3>
-            <button id="view-all-history-btn" class="btn btn-outline btn-sm">View All</button>
-          </div>
-          <div class="card-body" style="padding: 0;">
-            <!-- Desktop/Tablet Data Table -->
-            <div class="table-container desktop-only-table">
-              <table class="data-table">
-                <thead>
-                  <tr>
-                    <th>Date</th>
-                    <th>Generated</th>
-                    <th>Consumed</th>
-                    <th>Net Units</th>
-                    <th>Revenue / Payable</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody id="recent-entries-tbody">
-                  ${Skeleton.renderTableRows(4, 6)}
-                </tbody>
-              </table>
-            </div>
-
-            <!-- Mobile Card List Container -->
-            <div id="recent-entries-mobile-list" class="recent-mobile-list">
-              <div style="text-align: center; padding: 20px; color: var(--text-muted);">Loading recent entries...</div>
-            </div>
-          </div>
+      <div class="grid grid-cols-1 items-start gap-3 lg:grid-cols-3 lg:gap-5">
+        <div id="dashboard-balance" class="min-w-0 lg:col-span-2 lg:row-start-1">
+          <div class="hero h-80" aria-hidden="true"></div>
         </div>
 
-        <!-- Quick Summary Widget Card -->
-        <div class="card">
-          <div class="card-header">
-            <h3 class="card-title">Quick Solar Insight</h3>
-          </div>
-          <div class="card-body" style="display: flex; flex-direction: column; gap: 16px;">
-            <div style="padding: 16px; background: var(--bg-subtle); border-radius: var(--radius-md); border-left: 4px solid var(--primary-600);">
-              <div style="font-size: 0.82rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Solar Tariff Rates</div>
-              <div style="display: flex; justify-content: space-between; margin-top: 8px; font-weight: 600; font-size: 0.92rem;">
-                <span>Buying Rate (Grid Purchase):</span>
-                <span style="color: var(--success-600);">${currency}${appState.getState().settings.default_buying_rate}/unit</span>
-              </div>
-              <div style="display: flex; justify-content: space-between; margin-top: 4px; font-weight: 600; font-size: 0.92rem;">
-                <span>Selling Rate (Grid Consumption):</span>
-                <span style="color: var(--danger-600);">${currency}${appState.getState().settings.default_selling_rate}/unit</span>
-              </div>
-            </div>
+        <div id="dashboard-reading-status" class="min-w-0 empty:hidden lg:col-span-2 lg:row-start-2"></div>
 
-            <div style="padding: 16px; background: var(--primary-50); border-radius: var(--radius-md); color: var(--primary-700); font-size: 0.88rem;">
-              <strong>💡 Smart Tip:</strong> When generated solar units exceed grid consumption, you earn revenue at ${currency}${appState.getState().settings.default_buying_rate}/unit!
+        <section id="dashboard-kpi-grid" class="card min-w-0 lg:col-start-3 lg:row-span-2 lg:row-start-1 lg:h-full" aria-label="This month and meter readings">
+          <div class="card-body flex flex-col gap-3" aria-hidden="true">
+            <div class="skeleton h-4 w-24"></div>
+            <div class="skeleton h-8 w-full"></div>
+            <div class="skeleton h-8 w-full"></div>
+          </div>
+        </section>
+
+        <section class="card min-w-0 lg:col-start-3 lg:row-start-3" aria-labelledby="bills-title">
+          <div class="flex items-center justify-between gap-3 px-4 pt-3 pb-2 md:px-5">
+            <h2 id="bills-title" class="card-title">Electricity bills</h2>
+          </div>
+          <div id="dashboard-bills" class="divide-y divide-line border-t border-line">${Skeleton.renderListRows(1)}</div>
+        </section>
+
+        <section class="card min-w-0 lg:col-span-2 lg:col-start-1 lg:row-start-3" aria-labelledby="recent-title">
+          <div class="flex items-center justify-between gap-2 py-1 pr-2 pl-4 md:pl-5">
+            <h2 id="recent-title" class="card-title">Recent readings</h2>
+            <div class="flex items-center">
+              <button id="view-calendar-btn" class="btn btn-ghost btn-icon sm:w-auto sm:px-3" aria-label="Open calendar">${UI.icon('calendar')}<span class="hidden sm:inline">Calendar</span></button>
+              <button id="view-all-history-btn" class="btn btn-ghost px-3">View all</button>
             </div>
+          </div>
+          <div id="recent-entries-list" class="divide-y divide-line border-t border-line">
+            ${Skeleton.renderListRows(3)}
+          </div>
+        </section>
+      </div>
+    `;
+
+    UI.refreshIcons();
+    document.getElementById('view-all-history-btn').onclick = () => Router.navigate('history');
+    document.getElementById('view-calendar-btn').onclick = () => Router.navigate('calendar');
+    BillPanel.mount(document.getElementById('dashboard-balance'), document.getElementById('dashboard-bills'));
+    await Promise.all([BillPanel.load(), this.loadDashboardData()]);
+  },
+
+  async loadDashboardData() {
+    const snapshot = document.getElementById('dashboard-kpi-grid');
+    const list = document.getElementById('recent-entries-list');
+
+    try {
+      const res = await API.getDashboard();
+      if (!document.contains(snapshot)) return; // user already left this screen
+      const data = res.data;
+      this.renderReadingStatus(data);
+      this.renderSnapshot(snapshot, data);
+      this.renderRecent(list, data.recentEntries || []);
+      UI.refreshIcons();
+    } catch (err) {
+      console.error('Failed to load dashboard data:', err);
+      if (!document.contains(snapshot)) return;
+      UI.loadError(snapshot, () => this.render(document.getElementById('content-area')));
+      list.innerHTML = '';
+    }
+  },
+
+  renderReadingStatus(data) {
+    const el = document.getElementById('dashboard-reading-status');
+    const last = data.latest && data.latest.reading_date;
+    const today = localDateStr();
+
+    if (last === today) {
+      el.innerHTML = `
+        <div class="flex min-h-12 items-center gap-2.5 rounded-card bg-good-soft px-4 py-2.5 text-sm font-medium text-good" role="status">
+          ${UI.icon('circle-check')}<span>Today's reading is saved</span>
+        </div>
+      `;
+      return;
+    }
+
+    let detail = 'Add your first meter reading';
+    if (last) {
+      const toUtc = (d) => { const [y, m, day] = d.split('-').map(Number); return Date.UTC(y, m - 1, day); };
+      const days = Math.round((toUtc(today) - toUtc(last)) / 86400000);
+      detail = `Last: ${UI.date(last)} · ${days} day${days === 1 ? '' : 's'} ago`;
+    }
+    el.innerHTML = `
+      <button type="button" id="dashboard-reading-cta" class="flex min-h-14 w-full items-center gap-3 rounded-card border border-line bg-surface px-4 py-2.5 text-left shadow-card transition-colors duration-150 hover:bg-subtle active:bg-subtle">
+        <span class="grid size-9 shrink-0 place-items-center rounded-full bg-accent-soft text-accent">${UI.icon('gauge', 'size-4!')}</span>
+        <span class="min-w-0 flex-1">
+          <span class="block text-sm font-semibold">Today's reading is pending</span>
+          <span class="block truncate text-xs text-ink-3">${detail}</span>
+        </span>
+        <span class="text-ink-3">${UI.icon('chevron-right')}</span>
+      </button>
+    `;
+    document.getElementById('dashboard-reading-cta').onclick = () => Router.navigate('entry');
+  },
+
+  renderSnapshot(el, data) {
+    const month = new Date().toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+    const monthNet = parseFloat((data.month.generated - data.month.consumed).toFixed(2));
+    const latestDate = data.latest && data.latest.reading_date ? UI.date(data.latest.reading_date) : '';
+    const metric = (label, value, tone = 'text-ink') => `
+      <div class="min-w-0">
+        <div class="truncate text-xs text-ink-3">${label}</div>
+        <div class="mt-0.5 truncate text-lg font-semibold tracking-tight tabular-nums ${tone}">${value}</div>
+      </div>
+    `;
+
+    el.innerHTML = `
+      <div class="flex h-full flex-col divide-y divide-line">
+        <div class="flex flex-1 flex-col justify-center px-4 py-3 md:px-5 lg:py-4">
+          <div class="flex items-baseline justify-between gap-2">
+            <h2 class="card-title">This month</h2>
+            <span class="text-xs text-ink-3">${escapeHtml(month)}</span>
+          </div>
+          <div class="mt-2 grid grid-cols-3 gap-3">
+            ${metric('Export', data.month.generated, 'text-good')}
+            ${metric('Import', data.month.consumed, 'text-bad')}
+            ${metric('Net kWh', UI.signed(monthNet), UI.tone(monthNet))}
+          </div>
+        </div>
+        <div class="flex flex-1 flex-col justify-center px-4 py-3 md:px-5 lg:py-4">
+          <div class="flex items-baseline justify-between gap-2">
+            <h2 class="card-title">Meter readings</h2>
+            <span class="text-xs text-ink-3">${latestDate ? `Read ${latestDate}` : 'No reading yet'}</span>
+          </div>
+          <div class="mt-2 grid grid-cols-2 gap-3">
+            ${metric('Export meter', data.latest ? UI.meter(data.latest.export_meter) : '-')}
+            ${metric('Import meter', data.latest ? UI.meter(data.latest.import_meter) : '-')}
           </div>
         </div>
       </div>
     `;
-
-    if (window.lucide) lucide.createIcons();
-    this.bindEvents();
-    await this.loadDashboardData();
   },
 
-  bindEvents() {
-    const addBtn = document.getElementById('quick-add-entry-btn');
-    if (addBtn) {
-      addBtn.onclick = () => Router.navigate('entry');
+  renderRecent(list, entries) {
+    if (entries.length === 0) {
+      list.innerHTML = UI.empty({ title: 'No readings yet', body: 'Add today\'s meter reading to get started.' });
+      return;
     }
-    const viewAllBtn = document.getElementById('view-all-history-btn');
-    if (viewAllBtn) {
-      viewAllBtn.onclick = () => Router.navigate('history');
-    }
-  },
 
-  async loadDashboardData() {
-    try {
-      const res = await API.getDashboard();
-      const data = res.data;
-      const curr = appState.getState().settings.currency || '₹';
-
-      // Render 9 PRD specified KPI cards
-      const kpiGrid = document.getElementById('dashboard-kpi-grid');
-      kpiGrid.innerHTML = `
-        <!-- 1. Today's Generation -->
-        <div class="card kpi-card">
-          <div class="kpi-header">
-            <span class="kpi-title">Generated Today</span>
-            <div class="kpi-icon-wrapper" style="background: rgba(59, 130, 246, 0.1); color: var(--primary-600);">
-              <i data-lucide="sun"></i>
-            </div>
-          </div>
-          <div class="kpi-value"><span class="counter" data-target="${data.today.generated}">${data.today.generated}</span> <span style="font-size: 1.1rem; font-weight: 600; color: var(--text-muted);">kWh</span></div>
-          <div class="kpi-footer">Today's total solar generation</div>
-        </div>
-
-        <!-- 2. Today's Consumption -->
-        <div class="card kpi-card">
-          <div class="kpi-header">
-            <span class="kpi-title">Consumed Today</span>
-            <div class="kpi-icon-wrapper" style="background: rgba(148, 163, 184, 0.1); color: var(--text-secondary);">
-              <i data-lucide="zap"></i>
-            </div>
-          </div>
-          <div class="kpi-value"><span class="counter" data-target="${data.today.consumed}">${data.today.consumed}</span> <span style="font-size: 1.1rem; font-weight: 600; color: var(--text-muted);">kWh</span></div>
-          <div class="kpi-footer">Grid electricity consumed today</div>
-        </div>
-
-        <!-- 3. Today's Revenue -->
-        <div class="card kpi-card">
-          <div class="kpi-header">
-            <span class="kpi-title">Earned Today</span>
-            <div class="kpi-icon-wrapper" style="background: var(--success-50); color: var(--success-600);">
-              <i data-lucide="trending-up"></i>
-            </div>
-          </div>
-          <div class="kpi-value" style="color: var(--success-600);">${curr}<span class="counter" data-target="${data.today.revenue}">${data.today.revenue}</span></div>
-          <div class="kpi-footer"><span class="trend-badge trend-up">Profit</span> Net export revenue</div>
-        </div>
-
-        <!-- 4. Today's Amount Payable -->
-        <div class="card kpi-card">
-          <div class="kpi-header">
-            <span class="kpi-title">Owed Today</span>
-            <div class="kpi-icon-wrapper" style="background: var(--danger-50); color: var(--danger-600);">
-              <i data-lucide="trending-down"></i>
-            </div>
-          </div>
-          <div class="kpi-value" style="color: ${data.today.payable > 0 ? 'var(--danger-600)' : 'var(--text-primary)'};">${curr}<span class="counter" data-target="${data.today.payable}">${data.today.payable}</span></div>
-          <div class="kpi-footer"><span class="trend-badge ${data.today.payable > 0 ? 'trend-down' : 'trend-up'}">${data.today.payable > 0 ? 'Payable' : 'Clear'}</span> Net import expense</div>
-        </div>
-
-        <!-- 5. Month Profit -->
-        <div class="card kpi-card">
-          <div class="kpi-header">
-            <span class="kpi-title">Month Net Profit</span>
-            <div class="kpi-icon-wrapper" style="background: rgba(37, 99, 235, 0.1); color: var(--primary-600);">
-              <i data-lucide="calendar"></i>
-            </div>
-          </div>
-          <div class="kpi-value" style="color: ${data.month.net_profit >= 0 ? 'var(--success-600)' : 'var(--danger-600)'};">${curr}<span class="counter" data-target="${data.month.net_profit}">${data.month.net_profit}</span></div>
-          <div class="kpi-footer">Current month net balance</div>
-        </div>
-
-        <!-- 6. Year Profit -->
-        <div class="card kpi-card">
-          <div class="kpi-header">
-            <span class="kpi-title">Year Net Profit</span>
-            <div class="kpi-icon-wrapper" style="background: rgba(16, 185, 129, 0.1); color: var(--success-600);">
-              <i data-lucide="award"></i>
-            </div>
-          </div>
-          <div class="kpi-value" style="color: ${data.year.net_profit >= 0 ? 'var(--success-600)' : 'var(--danger-600)'};">${curr}<span class="counter" data-target="${data.year.net_profit}">${data.year.net_profit}</span></div>
-          <div class="kpi-footer">Current year net balance</div>
-        </div>
-
-        <!-- 7. Lifetime Revenue -->
-        <div class="card kpi-card">
-          <div class="kpi-header">
-            <span class="kpi-title">Lifetime Revenue</span>
-            <div class="kpi-icon-wrapper" style="background: var(--success-50); color: var(--success-600);">
-              <i data-lucide="dollar-sign"></i>
-            </div>
-          </div>
-          <div class="kpi-value" style="color: var(--success-600);">${curr}<span class="counter" data-target="${data.lifetime.revenue}">${data.lifetime.revenue}</span></div>
-          <div class="kpi-footer">Total accumulated earnings</div>
-        </div>
-
-        <!-- 8. Lifetime Expense -->
-        <div class="card kpi-card">
-          <div class="kpi-header">
-            <span class="kpi-title">Lifetime Expense</span>
-            <div class="kpi-icon-wrapper" style="background: var(--danger-50); color: var(--danger-600);">
-              <i data-lucide="credit-card"></i>
-            </div>
-          </div>
-          <div class="kpi-value" style="color: var(--danger-600);">${curr}<span class="counter" data-target="${data.lifetime.expense}">${data.lifetime.expense}</span></div>
-          <div class="kpi-footer">Total accumulated payments</div>
-        </div>
-
-        <!-- 9. Lifetime Net Profit -->
-        <div class="card kpi-card" style="grid-column: span 1 / -1;">
-          <div class="kpi-header">
-            <span class="kpi-title">Lifetime Net Profit</span>
-            <div class="kpi-icon-wrapper" style="background: linear-gradient(135deg, var(--primary-600), #8b5cf6); color: white;">
-              <i data-lucide="pie-chart"></i>
-            </div>
-          </div>
-          <div class="kpi-value" style="font-size: 2.2rem; color: ${data.lifetime.net_profit >= 0 ? 'var(--success-600)' : 'var(--danger-600)'};">${curr}<span class="counter" data-target="${data.lifetime.net_profit}">${data.lifetime.net_profit}</span></div>
-          <div class="kpi-footer">All time financial yield from solar installation</div>
-        </div>
+    list.innerHTML = entries.map(e => {
+      const net = parseFloat(e.net_units) || 0;
+      const label = net > 0 ? 'Surplus' : (net < 0 ? 'Deficit' : 'Balanced');
+      const [y, m, d] = e.entry_date.split('-').map(Number);
+      const date = new Date(y, m - 1, d);
+      return `
+        <button type="button" class="recent-entry-row flex min-h-16 w-full items-center gap-3 px-4 py-2 text-left transition-colors duration-150 hover:bg-subtle active:bg-subtle md:px-5" data-id="${escapeHtml(e.id || '')}" aria-label="Edit reading of ${UI.dateLong(e.entry_date)}">
+          <span class="flex size-11 shrink-0 flex-col items-center justify-center rounded-control bg-subtle">
+            <span class="text-[0.9375rem] leading-none font-semibold tabular-nums">${String(d).padStart(2, '0')}</span>
+            <span class="mt-0.5 text-[0.625rem] leading-none font-semibold text-ink-3 uppercase">${date.toLocaleDateString('en-IN', { month: 'short' })}</span>
+          </span>
+          <span class="min-w-0 flex-1">
+            <span class="block truncate text-sm font-semibold">${date.toLocaleDateString('en-IN', { weekday: 'long' })}</span>
+            <span class="block truncate text-xs text-ink-3 tabular-nums">Export ${e.generated_units} · Import ${e.consumed_units}</span>
+          </span>
+          <span class="shrink-0 text-right">
+            <span class="block text-[0.9375rem] font-semibold tabular-nums ${UI.tone(net)}">${UI.signed(net)}</span>
+            <span class="block text-[0.6875rem] text-ink-3">${label}</span>
+          </span>
+        </button>
       `;
+    }).join('');
 
-      if (window.lucide) lucide.createIcons();
-      this.animateCounters();
-
-      // Render Desktop Data Table
-      const tbody = document.getElementById('recent-entries-tbody');
-      const mobileList = document.getElementById('recent-entries-mobile-list');
-
-      if (data.recentEntries.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 24px; color: var(--text-muted);">No daily entries recorded yet.</td></tr>`;
-        mobileList.innerHTML = `<div style="text-align: center; padding: 24px; color: var(--text-muted);">No daily entries recorded yet.</div>`;
-        return;
-      }
-
-      // 1. Desktop Table Rows
-      tbody.innerHTML = data.recentEntries.map(e => {
-        let badgeClass = 'badge-balanced';
-        if (e.status === 'profit') badgeClass = 'badge-profit';
-        if (e.status === 'loss') badgeClass = 'badge-loss';
-
-        const amountStr = e.status === 'profit' ? `+${curr}${e.revenue}` : (e.status === 'loss' ? `-${curr}${e.payable}` : `${curr}0.00`);
-
-        return `
-          <tr>
-            <td style="font-weight: 600;">${e.entry_date}</td>
-            <td style="color: var(--primary-600); font-weight: 600;">${e.generated_units} kWh</td>
-            <td style="color: var(--text-secondary);">${e.consumed_units} kWh</td>
-            <td style="font-weight: 600;">${e.net_units > 0 ? '+' : ''}${e.net_units} kWh</td>
-            <td style="font-weight: 700; color: ${e.status === 'profit' ? 'var(--success-600)' : (e.status === 'loss' ? 'var(--danger-600)' : 'var(--text-primary)')};">${amountStr}</td>
-            <td><span class="badge ${badgeClass}">${e.status}</span></td>
-          </tr>
-        `;
-      }).join('');
-
-      // 2. Mobile Touch Cards
-      mobileList.innerHTML = data.recentEntries.map(e => {
-        let badgeClass = 'badge-balanced';
-        if (e.status === 'profit') badgeClass = 'badge-profit';
-        if (e.status === 'loss') badgeClass = 'badge-loss';
-
-        const amountStr = e.status === 'profit' ? `+${curr}${e.revenue}` : (e.status === 'loss' ? `-${curr}${e.payable}` : `${curr}0.00`);
-        const amountColor = e.status === 'profit' ? 'var(--success-600)' : (e.status === 'loss' ? 'var(--danger-600)' : 'var(--text-primary)');
-
-        return `
-          <div class="mobile-entry-card">
-            <div class="mobile-entry-top">
-              <div class="mobile-entry-date"><i data-lucide="calendar" style="width:16px; height:16px;"></i> ${e.entry_date}</div>
-              <span class="badge ${badgeClass}">${e.status}</span>
-            </div>
-            <div class="mobile-entry-body">
-              <div>
-                <span class="stat-label">Generated</span>
-                <span class="stat-value" style="color: var(--primary-600);">${e.generated_units} kWh</span>
-              </div>
-              <div>
-                <span class="stat-label">Consumed</span>
-                <span class="stat-value" style="color: var(--text-secondary);">${e.consumed_units} kWh</span>
-              </div>
-              <div>
-                <span class="stat-label">Financial</span>
-                <span class="stat-value" style="color: ${amountColor};">${amountStr}</span>
-              </div>
-            </div>
-          </div>
-        `;
-      }).join('');
-
-      if (window.lucide) lucide.createIcons();
-
-    } catch (err) {
-      console.error('Failed to load dashboard data:', err);
-    }
-  },
-
-  animateCounters() {
-    const counters = document.querySelectorAll('.counter');
-    counters.forEach(c => {
-      const target = parseFloat(c.getAttribute('data-target')) || 0;
-      let start = 0;
-      const duration = 800;
-      const stepTime = 20;
-      const steps = duration / stepTime;
-      const increment = target / steps;
-
-      let current = 0;
-      const timer = setInterval(() => {
-        current += increment;
-        if ((increment >= 0 && current >= target) || (increment < 0 && current <= target)) {
-          c.textContent = target.toFixed(2);
-          clearInterval(timer);
-        } else {
-          c.textContent = current.toFixed(2);
-        }
-      }, stepTime);
+    list.querySelectorAll('.recent-entry-row').forEach(row => {
+      row.onclick = () => {
+        const id = row.getAttribute('data-id');
+        Router.navigate('entry', id ? { id } : {});
+      };
     });
   }
 };

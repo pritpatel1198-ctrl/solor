@@ -9,7 +9,8 @@ const Toast = {
     if (!el) {
       el = document.createElement('div');
       el.id = 'toast-container';
-      el.className = 'toast-container';
+      el.className = 'pointer-events-none fixed inset-x-4 top-[calc(env(safe-area-inset-top)+0.75rem)] z-70 flex flex-col items-center gap-2 sm:right-4 sm:left-auto sm:w-96 sm:items-end print:hidden';
+      el.setAttribute('aria-live', 'polite');
       document.body.appendChild(el);
     }
     this.container = el;
@@ -18,26 +19,24 @@ const Toast = {
   show(message, type = 'info', duration = 3500) {
     if (!this.container) this.init();
 
-    const toast = document.createElement('div');
-    toast.className = `toast toast-${type}`;
+    const tone = { success: 'text-good', error: 'text-bad', info: 'text-ink-2' }[type] || 'text-ink-2';
+    const icon = { success: 'check-circle', error: 'alert-triangle', info: 'info' }[type] || 'info';
 
-    let icon = 'info';
-    if (type === 'success') icon = 'check-circle';
-    if (type === 'error') icon = 'alert-triangle';
+    const toast = document.createElement('div');
+    toast.className = 'pointer-events-auto flex w-full items-start gap-2.5 rounded-control border border-line bg-surface px-3.5 py-3 text-sm font-medium text-ink shadow-float transition-opacity duration-200';
+    if (type === 'error') toast.setAttribute('role', 'alert');
 
     toast.innerHTML = `
-      <i data-lucide="${icon}"></i>
-      <span>${message}</span>
+      <span class="${tone}"><i data-lucide="${icon}" aria-hidden="true"></i></span>
+      <span class="min-w-0 break-words">${escapeHtml(message)}</span>
     `;
 
     this.container.appendChild(toast);
     if (window.lucide) lucide.createIcons();
 
     setTimeout(() => {
-      toast.style.opacity = '0';
-      toast.style.transform = 'translateX(100%)';
-      toast.style.transition = 'all 0.3s ease';
-      setTimeout(() => toast.remove(), 300);
+      toast.classList.add('opacity-0');
+      setTimeout(() => toast.remove(), 200);
     }, duration);
   },
 

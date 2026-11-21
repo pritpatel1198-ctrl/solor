@@ -1,40 +1,40 @@
-const { supabase, isDemo, DEMO_USER_ID } = require('../config/supabase');
+const { supabase, isDemo, DEMO_USER_ID, isNetworkOrServerError, reportSupabaseError } = require('../config/supabase');
 
+/**
+ * Require a valid Supabase access token.
+ * Demo mode (no Supabase configured, local development only) maps every request to the demo user.
+ */
 async function authenticateUser(req, res, next) {
-  try {
-    const authHeader = req.headers.authorization;
-
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      req.user = { id: DEMO_USER_ID, email: 'Prit@solar.com' };
-      return next();
-    }
-
-    const token = authHeader.split(' ')[1];
-
-    if (token === 'demo-token') {
-      req.user = { id: DEMO_USER_ID, email: 'Prit@solar.com' };
-      return next();
-    }
-
-    if (isDemo || !supabase) {
-      req.user = { id: DEMO_USER_ID, email: 'Prit@solar.com' };
-      return next();
-    }
-
-    const { data: { user }, error } = await supabase.auth.getUser(token);
-
-    if (error || !user) {
-      // Fallback to demo user if token is invalid or expired
-      req.user = { id: DEMO_USER_ID, email: 'Prit@solar.com' };
-      return next();
-    }
-
-    req.user = { id: user.id, email: user.email };
-    next();
-  } catch (err) {
-    console.error('Authentication Error:', err);
+  if (isDemo || !supabase) {
     req.user = { id: DEMO_USER_ID, email: 'Prit@solar.com' };
-    next();
+    return next();
+  }
+
+  const authHeader = req.headers.authorization || '';
+  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : '';
+
+  if (!token) {
+    return res.status(401).json({ success: false, error: 'Authentication required. Please sign in.' });
+  }
+
+  try {
+    const { data, error } = await supabase.auth.getUser(token);
+    const user = data && data.user;
+
+    if (user && !error) {
+      req.user = { id: user.id, email: user.email };
+      return next();
+    }
+
+    if (error && isNetworkOrServerError(error)) {
+      reportSupabaseError(error);
+      return res.status(503).json({ success: false, error: 'Authentication service is temporarily unavailable. Please try again.' });
+    }
+
+    return res.status(401).json({ success: false, error: 'Your session has expired. Please sign in again.' });
+  } catch (err) {
+    reportSupabaseError(err);
+    return res.status(503).json({ success: false, error: 'Authentication service is temporarily unavailable. Please try again.' });
   }
 }
 
