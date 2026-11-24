@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import {
   View,
   Text,
@@ -98,6 +99,19 @@ export const DailyEntryScreen: React.FC<DailyEntryScreenProps> = ({ navigation, 
     }
     loadData();
   }, [editId]);
+
+  // A new entry uses the current Settings rates, even if they changed while this tab stayed open
+  useFocusEffect(
+    useCallback(() => {
+      if (editId) return;
+      api.getSettings()
+        .then((settings) => {
+          if (settings?.default_buying_rate) setBuyingRate(String(settings.default_buying_rate));
+          if (settings?.default_selling_rate) setSellingRate(String(settings.default_selling_rate));
+        })
+        .catch((err: any) => console.warn('Could not load rates from Settings:', err.message));
+    }, [editId])
+  );
 
   // Auto pre-fill previous closing meters into today's opening meters (Matching Web feature)
   useEffect(() => {

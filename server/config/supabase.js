@@ -86,18 +86,24 @@ let supabaseAdmin = null;
 
 if (!isDemo) {
   try {
-    supabase = createClient(supabaseUrl, supabaseKey, {
-      auth: { persistSession: false }
-    });
-    supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
-      auth: { persistSession: false }
-    });
+    // Shared clients must never hold or auto-renew a user's session: refresh tokens are
+    // single-use, so a server-side renewal would silently log the real user out.
+    const serverAuth = { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false };
+    supabase = createClient(supabaseUrl, supabaseKey, { auth: serverAuth });
+    supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, { auth: serverAuth });
   } catch (err) {
     console.warn('[Database] Supabase initialization failed:', err.message);
   }
 }
 
 const dbClient = supabaseAdmin || supabase;
+
+// A throwaway client for one sign-in/refresh, so no user session stays in server memory
+function createAuthClient() {
+  return createClient(supabaseUrl, supabaseKey, {
+    auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }
+  });
+}
 
 // Circuit Breaker & Connection State
 let isSupabaseOnline = !isDemo && Boolean(dbClient);
@@ -255,6 +261,7 @@ function unwrapWriteResult(res, fallbackMessage) {
 }
 
 module.exports = {
+  createAuthClient,
   HttpError,
   dbUnavailableError,
   assertWritableDb,

@@ -42,6 +42,8 @@ const CrystalReportPdf = {
    * Builds the complete Crystal Reports HTML structure
    */
   buildReportHtml(reportData, userEmail, currency = '₹') {
+    // Rates as currently set in Settings
+    const rates = (typeof appState !== 'undefined' && appState.getState().settings) || {};
     userEmail = escapeHtml(userEmail || '');
     const summary = reportData.summary || {};
     const variance = reportData.variance || {};
@@ -381,7 +383,7 @@ const CrystalReportPdf = {
             <h3 class="cr-section-title">4. REGULATORY & ACCOUNTING METHODOLOGY NOTES</h3>
             <ol class="cr-notes-list">
               <li><strong>Net Energy Computation:</strong> Daily Net Units are determined by <code>Generated Units - Consumed Units</code>. Net positive units denote grid export surplus; negative units denote grid import deficit.</li>
-              <li><strong>Feed-in Tariff Crediting:</strong> Energy surplus exported to the power distribution company is credited at the statutory Buying Rate (Default: ₹2.25/kWh). Payable deficit is calculated at the standard Grid Selling Tariff (Default: ₹2.25/kWh).</li>
+              <li><strong>Feed-in Tariff Crediting:</strong> Energy surplus exported to the power distribution company is credited at the Buying Rate (${currency}${this.formatNumber(rates.default_buying_rate)}/kWh). Payable deficit is calculated at the Grid Selling Tariff (${currency}${this.formatNumber(rates.default_selling_rate)}/kWh).</li>
               <li><strong>Precision Standard:</strong> All financial amounts and energy quantities are rounded to 2 decimal places with banker's rounding to eliminate cumulative rounding drift.</li>
               <li><strong>Meter Authenticity:</strong> All metrics derive from validated meter reading submissions with verified chronological dependency tracking.</li>
             </ol>

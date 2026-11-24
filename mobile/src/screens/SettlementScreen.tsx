@@ -67,19 +67,17 @@ export const SettlementScreen: React.FC<SettlementScreenProps> = ({ navigation, 
   const [statementModalVisible, setStatementModalVisible] = useState(false);
   const [isExportingPdf, setIsExportingPdf] = useState(false);
 
-  // Load defaults from user settings
-  useEffect(() => {
-    async function loadSettings() {
-      try {
-        const s = await api.getSettings();
-        if (s) {
-          if (s.default_buying_rate) setBuyingRate(String(s.default_buying_rate));
-          if (s.default_selling_rate) setSellingRate(String(s.default_selling_rate));
-        }
-      } catch (e) {}
-    }
-    loadSettings();
-  }, []);
+  // Rates come from Settings; reload them whenever this screen comes into view
+  useFocusEffect(
+    useCallback(() => {
+      api.getSettings()
+        .then((s) => {
+          if (s?.default_buying_rate) setBuyingRate(String(s.default_buying_rate));
+          if (s?.default_selling_rate) setSellingRate(String(s.default_selling_rate));
+        })
+        .catch((err: any) => console.warn('Could not load rates from Settings:', err.message));
+    }, [])
+  );
 
   const fetchSettlement = useCallback(async () => {
     try {

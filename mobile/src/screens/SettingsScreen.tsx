@@ -112,7 +112,13 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) =>
       {
         text: 'Sign Out',
         style: 'destructive',
-        onPress: () => {
+        onPress: async () => {
+          try {
+            // Revoke this device's session, without blocking sign-out on a slow network
+            await Promise.race([api.logout(), new Promise((resolve) => setTimeout(resolve, 4000))]);
+          } catch (err: any) {
+            console.warn('Could not revoke session on the server:', err.message);
+          }
           setAuthToken(null);
         },
       },

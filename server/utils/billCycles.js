@@ -1,18 +1,19 @@
 /**
  * ====================================================================================
- * ELECTRICITY BILL CYCLES (bill arrives every ~2 months)
+ * ELECTRICITY BILL CYCLES (bill arrives every ~2 months), in rupees
  * ====================================================================================
  *
- * Each bill closes a cycle:
- *   balance before bill = carried-in units + (export - import) since the previous bill,
- *                         up to and including the bill date
- *   remaining units     = balance before bill - units adjusted on the bill
- *   remaining money     = remaining units x rate
- *                         (positive: credit at buying rate, negative: payable at selling rate)
+ * Balance (₹) = carried amount from the last bill
+ *             + value of the units since then (export - import, period-netted):
+ *                 surplus units x buying rate  (adds)
+ *                 deficit units x selling rate (subtracts)
  *
- * The remaining units carry into the next cycle, which starts the day after the bill.
- * Everything is derived from entries + bills, so editing an old reading stays consistent.
- * Rates saved on a bill keep its statement stable if Settings change later.
+ * Adding a bill: its signed amount is added to the balance on the bill date.
+ *   +500 adds ₹500, -500 subtracts ₹500. The result carries into the next cycle,
+ *   which starts the day after the bill.
+ *
+ * Everything is derived from entries + bills + the current Settings rates,
+ * so a rate change or an edited reading is reflected everywhere.
  */
 
 function round2(num) {
@@ -29,9 +30,17 @@ function nextDay(dateStr) {
   return new Date(Date.UTC(y, m - 1, d + 1)).toISOString().slice(0, 10);
 }
 
-function moneyFor(units, buyingRate, sellingRate) {
-  if (units > 0) return { type: 'credit', amount: round2(units * buyingRate) };
-  if (units < 0) return { type: 'payable', amount: round2(Math.abs(units) * sellingRate) };
+// Signed rupee value of net units: surplus is credited, deficit is payable
+function energyValue(netUnits, buyingRate, sellingRate) {
+  if (netUnits > 0) return round2(netUnits * buyingRate);
+  if (netUnits < 0) return round2(-Math.abs(netUnits) * sellingRate);
+  return 0;
+}
+
+// Display form of a signed amount
+function moneyFor(amount) {
+  if (amount > 0) return { type: 'credit', amount: round2(amount) };
+  if (amount < 0) return { type: 'payable', amount: round2(Math.abs(amount)) };
   return { type: 'balanced', amount: 0 };
 }
 
@@ -53,8 +62,8 @@ function summarizePeriod(entries, start, end) {
 
 /**
  * @param {Array} entries daily entries (entry_date, generated_units, consumed_units)
- * @param {Array} bills saved bills (id, bill_date, adjusted_units, bill_amount, buying_rate, selling_rate)
- * @param {object} rates current { buyingRate, sellingRate }, used for the open cycle
+ * @param {Array} bills saved bills (id, bill_date, bill_amount)
+ * @param {object} rates current Settings { buyingRate, sellingRate }
  * @returns {{ current: object, bills: Array }} bills are newest first
  */
 function buildBillLedger(entries = [], bills = [], { buyingRate = 2.25, sellingRate = 2.25 } = {}) {
@@ -69,26 +78,23 @@ function buildBillLedger(entries = [], bills = [], { buyingRate = 2.25, sellingR
   for (const bill of sortedBills) {
     const start = cycleStart && cycleStart <= bill.bill_date ? cycleStart : bill.bill_date;
     const period = summarizePeriod(sortedEntries, start, bill.bill_date);
-    const balanceBefore = round2(opening + period.net_units);
-    const adjusted = round2(parseFloat(bill.adjusted_units));
-    const remaining = round2(balanceBefore - adjusted);
-    const billBuy = parseFloat(bill.buying_rate);
-    const billSell = parseFloat(bill.selling_rate);
+    const periodAmount = energyValue(period.net_units, buyingRate, sellingRate);
+    const before = round2(opening + periodAmount);
+    const billAmount = round2(parseFloat(bill.bill_amount) || 0);
+    const remaining = round2(before + billAmount);
 
     closed.push({
       id: bill.id,
       bill_date: bill.bill_date,
       period_start: start,
       period_end: bill.bill_date,
-      opening_units: opening,
+      opening_amount: opening,
       ...period,
-      balance_before_units: balanceBefore,
-      adjusted_units: adjusted,
-      remaining_units: remaining,
-      remaining_money: moneyFor(remaining, billBuy, billSell),
-      bill_amount: bill.bill_amount === null || bill.bill_amount === undefined ? null : parseFloat(bill.bill_amount),
-      buying_rate: billBuy,
-      selling_rate: billSell
+      period_amount: periodAmount,
+      balance_before_amount: before,
+      bill_amount: billAmount,
+      remaining_amount: remaining,
+      remaining_money: moneyFor(remaining)
     });
 
     opening = remaining;
@@ -100,16 +106,18 @@ function buildBillLedger(entries = [], bills = [], { buyingRate = 2.25, sellingR
   const openPeriod = hasOpenReadings
     ? summarizePeriod(sortedEntries, cycleStart, lastEntryDate)
     : { export_units: 0, import_units: 0, net_units: 0, days: 0, days_with_entries: 0, missing_days: 0 };
-  const balance = round2(opening + openPeriod.net_units);
+  const periodAmount = energyValue(openPeriod.net_units, buyingRate, sellingRate);
+  const balance = round2(opening + periodAmount);
 
   return {
     current: {
       period_start: cycleStart,
       period_end: hasOpenReadings ? lastEntryDate : null,
-      opening_units: opening,
+      opening_amount: opening,
       ...openPeriod,
-      balance_units: balance,
-      money: moneyFor(balance, buyingRate, sellingRate),
+      period_amount: periodAmount,
+      balance_amount: balance,
+      money: moneyFor(balance),
       buying_rate: buyingRate,
       selling_rate: sellingRate,
       last_bill_date: sortedBills.length ? sortedBills[sortedBills.length - 1].bill_date : null
@@ -118,4 +126,4 @@ function buildBillLedger(entries = [], bills = [], { buyingRate = 2.25, sellingR
   };
 }
 
-module.exports = { buildBillLedger, moneyFor, nextDay };
+module.exports = { buildBillLedger, energyValue, moneyFor, nextDay };

@@ -29,6 +29,8 @@ class StateStore {
         localStorage.setItem('solar_auth_token', newState.token);
       } else {
         localStorage.removeItem('solar_auth_token');
+        localStorage.removeItem('solar_refresh_token');
+        localStorage.removeItem('solar_token_expires_at');
       }
     }
     if (newState.theme !== undefined) {
@@ -36,6 +38,16 @@ class StateStore {
       document.documentElement.setAttribute('data-theme', newState.theme);
     }
     this.notify();
+  }
+
+  // Store a Supabase session: the short-lived access token plus what's needed to renew it
+  setSession(session) {
+    // Access token first: another tab that sees a new refresh token can rely on it being there too
+    this.setState({ token: session.access_token });
+    if (session.refresh_token) localStorage.setItem('solar_refresh_token', session.refresh_token);
+    else localStorage.removeItem('solar_refresh_token');
+    if (session.expires_at) localStorage.setItem('solar_token_expires_at', String(session.expires_at));
+    else localStorage.removeItem('solar_token_expires_at');
   }
 
   subscribe(listener) {

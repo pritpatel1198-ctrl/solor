@@ -49,7 +49,7 @@ async function loadBills(userId) {
   return fetchAllPages(
     () => dbClient
       .from('electricity_bills')
-      .select('id, bill_date, adjusted_units, bill_amount, buying_rate, selling_rate')
+      .select('id, bill_date, bill_amount')
       .eq('user_id', userId)
       .order('bill_date', { ascending: true }),
     'Failed to load bills'
@@ -69,14 +69,14 @@ async function getLedger(userId) {
   return buildBillLedger(entries, bills, rates);
 }
 
-async function createBill(userId, { bill_date, adjusted_units, bill_amount }) {
+async function createBill(userId, { bill_date, bill_amount }) {
   assertWritableDb();
   const rates = await currentRates(userId);
   const record = {
     user_id: userId,
     bill_date,
-    adjusted_units: Number(adjusted_units),
-    bill_amount: bill_amount === undefined || bill_amount === null || bill_amount === '' ? null : Number(bill_amount),
+    adjusted_units: 0, // bills are entered as a signed amount; the units column is kept for old rows
+    bill_amount: Number(bill_amount),
     buying_rate: rates.buyingRate,
     selling_rate: rates.sellingRate
   };

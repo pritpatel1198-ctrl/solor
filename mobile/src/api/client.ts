@@ -21,6 +21,8 @@ let API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || DEFAULT_HOST;
 // Set after sign-in. The server requires a valid Supabase session (demo tokens work only
 // against a local server without Supabase configured).
 let authToken: string | null = null;
+let refreshToken: string | null = null;
+let tokenExpiresAt = 0; // seconds since epoch
 
 export const setApiBaseUrl = (url: string) => {
   API_BASE_URL = url.replace(/\/+$/, '');
@@ -40,7 +42,55 @@ export const onAuthChange = (listener: AuthChangeListener) => {
 
 export const setAuthToken = (token: string | null) => {
   authToken = token;
+  if (!token) {
+    refreshToken = null;
+    tokenExpiresAt = 0;
+  }
   authListeners.forEach(listener => listener(token));
+};
+
+interface AuthSession {
+  access_token: string;
+  refresh_token?: string;
+  expires_at?: number;
+}
+
+const setSession = (session: AuthSession) => {
+  refreshToken = session.refresh_token || null;
+  tokenExpiresAt = session.expires_at || 0;
+  setAuthToken(session.access_token);
+};
+
+type RenewalResult = 'ok' | 'expired' | 'unavailable';
+let renewal: Promise<RenewalResult> | null = null;
+
+async function renewSession(): Promise<RenewalResult> {
+  if (!refreshToken) return 'expired';
+  try {
+    const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({ refresh_token: refreshToken }),
+    });
+    if (response.status === 400 || response.status === 401) return 'expired';
+    if (!response.ok) return 'unavailable';
+    const json = await response.json();
+    if (!json.data?.session?.access_token) return 'unavailable';
+    setSession(json.data.session);
+    return 'ok';
+  } catch {
+    return 'unavailable';
+  }
+}
+
+// Requests that fail together share one renewal: refresh tokens are single-use
+const refreshAuth = (): Promise<RenewalResult> => {
+  if (!renewal) {
+    renewal = renewSession().finally(() => {
+      renewal = null;
+    });
+  }
+  return renewal;
 };
 
 export const getAuthToken = () => authToken;
@@ -49,7 +99,18 @@ interface RequestOptions extends RequestInit {
   params?: Record<string, string | number | boolean | undefined>;
 }
 
-async function request<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
+async function request<T>(endpoint: string, options: RequestOptions = {}, isRetry = false): Promise<T> {
+  const isAuthEndpoint = endpoint.startsWith('/auth/login') || endpoint.startsWith('/auth/signup');
+  const isLogout = endpoint.startsWith('/auth/logout');
+
+  // Renew shortly before the access token expires
+  if (!isAuthEndpoint && authToken && refreshToken && tokenExpiresAt && tokenExpiresAt - Date.now() / 1000 < 60) {
+    if ((await refreshAuth()) === 'expired') {
+      if (!isLogout) setAuthToken(null);
+      throw new Error('Your session has expired. Please sign in again.');
+    }
+  }
+
   let url = `${API_BASE_URL}${endpoint}`;
 
   if (options.params) {
@@ -68,8 +129,9 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
     ...(options.headers as Record<string, string>),
   };
 
-  if (authToken) {
-    headers['Authorization'] = `Bearer ${authToken}`;
+  const sentToken = authToken;
+  if (sentToken) {
+    headers['Authorization'] = `Bearer ${sentToken}`;
   }
 
   try {
@@ -85,8 +147,13 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
       throw new Error(`Server error (HTTP ${response.status}). Check the API URL and try again.`);
     }
 
-    // Session missing/expired: sign out so the navigator shows the login screen
-    if (response.status === 401 && authToken && !endpoint.startsWith('/auth/')) {
+    // Access token rejected: renew it once and repeat the request
+    if (response.status === 401 && sentToken && !isAuthEndpoint && !isLogout) {
+      if (!isRetry) {
+        const result = authToken !== sentToken ? 'ok' : await refreshAuth();
+        if (result === 'ok') return await request<T>(endpoint, options, true);
+        if (result === 'unavailable') throw new Error('Could not reach the login service. Please try again.');
+      }
       setAuthToken(null);
       throw new Error(json.error || 'Your session has expired. Please sign in again.');
     }
@@ -105,24 +172,28 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
 
 export const api = {
   // Authentication
-  async login(email: string, password: string): Promise<{ user: AuthUser; session?: { access_token: string } }> {
+  async logout(): Promise<void> {
+    await request<unknown>('/auth/logout', { method: 'POST' });
+  },
+
+  async login(email: string, password: string): Promise<{ user: AuthUser; session?: AuthSession }> {
     const res = await request<any>('/auth/login', {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     });
     if (res.session?.access_token) {
-      setAuthToken(res.session.access_token);
+      setSession(res.session);
     }
     return res;
   },
 
-  async signUp(email: string, password: string): Promise<{ user: AuthUser; session?: { access_token: string } }> {
+  async signUp(email: string, password: string): Promise<{ user: AuthUser; session?: AuthSession }> {
     const res = await request<any>('/auth/signup', {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     });
     if (res.session?.access_token) {
-      setAuthToken(res.session.access_token);
+      setSession(res.session);
     }
     return res;
   },
@@ -197,7 +268,7 @@ export const api = {
     return request<BillLedger>('/bills');
   },
 
-  async createBill(bill: { bill_date: string; adjusted_units: number; bill_amount: number }): Promise<BillLedger & { saved: ClosedBill }> {
+  async createBill(bill: { bill_date: string; bill_amount: number }): Promise<BillLedger & { saved: ClosedBill }> {
     return request<BillLedger & { saved: ClosedBill }>('/bills', {
       method: 'POST',
       body: JSON.stringify(bill),

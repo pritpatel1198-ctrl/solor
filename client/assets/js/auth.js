@@ -33,7 +33,8 @@ const Auth = {
       // No session means Supabase requires email confirmation before the first sign-in
       if (!token) return { ...res.data, needsConfirmation: true };
 
-      appState.setState({ user: res.data.user, token });
+      appState.setSession(res.data.session);
+      appState.setState({ user: res.data.user });
       await this.loadSettings();
       return res.data;
     } catch (err) {
@@ -54,7 +55,8 @@ const Auth = {
       const token = res.data.session?.access_token;
       if (!token) throw new Error('Sign in failed: no session was returned.');
 
-      appState.setState({ user: res.data.user, token });
+      appState.setSession(res.data.session);
+      appState.setState({ user: res.data.user });
       await this.loadSettings();
       return res.data;
     } catch (err) {
@@ -75,10 +77,11 @@ const Auth = {
   },
 
   async signOut() {
-    if (this.supabaseClient) {
-      try {
-        await this.supabaseClient.auth.signOut();
-      } catch (e) {}
+    try {
+      await API.logout();
+    } catch (err) {
+      // Still sign out on this device if the server can't be reached
+      console.warn('Could not revoke session on the server:', err.message);
     }
     appState.setState({
       user: null,
@@ -102,8 +105,12 @@ const Auth = {
         return false;
       }
     } catch (err) {
-      appState.setState({ user: null, token: null });
-      return false;
+      // Only a rejected login ends the session; a network or server hiccup must not
+      if (err.status === 401) {
+        appState.setState({ user: null, token: null });
+        return false;
+      }
+      return Boolean(appState.getState().token);
     }
   }
 };

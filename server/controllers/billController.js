@@ -19,9 +19,9 @@ function toNumber(value) {
 function validateNewBill(body) {
   if (!isValidDate(body.bill_date)) return 'Bill date is required (YYYY-MM-DD)';
   if (body.bill_date > todayInAppTz()) return 'Bill date cannot be in the future';
-  const units = toNumber(body.adjusted_units);
-  if (!Number.isFinite(units) || units < 0) return 'Bill units must be a number of 0 or more';
-  if (!Number.isFinite(toNumber(body.bill_amount))) return 'Bill amount is required';
+  const amount = toNumber(body.bill_amount);
+  if (!Number.isFinite(amount)) return 'Bill amount is required';
+  if (amount === 0) return 'Bill amount cannot be 0';
   return null;
 }
 
@@ -38,13 +38,13 @@ async function listBills(req, res) {
   }
 }
 
-// POST /api/bills: { bill_date, adjusted_units, bill_amount }
+// POST /api/bills: { bill_date, bill_amount } (+ adds to the balance, - subtracts)
 async function createBill(req, res) {
   try {
     const validationError = validateNewBill(req.body || {});
     if (validationError) return res.status(400).json({ success: false, error: validationError });
-    const { bill_date, adjusted_units, bill_amount } = req.body;
-    const data = await billService.createBill(req.user.id, { bill_date, adjusted_units, bill_amount });
+    const { bill_date, bill_amount } = req.body;
+    const data = await billService.createBill(req.user.id, { bill_date, bill_amount });
     res.status(201).json({ success: true, data });
   } catch (err) {
     sendError(res, err);

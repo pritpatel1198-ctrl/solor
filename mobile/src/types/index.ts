@@ -166,34 +166,33 @@ export interface ClosedBill {
   bill_date: string;
   period_start: string;
   period_end: string;
-  opening_units: number;
+  opening_amount: number;
   export_units: number;
   import_units: number;
   net_units: number;
   days: number;
   days_with_entries: number;
   missing_days: number;
-  balance_before_units: number;
-  adjusted_units: number;
-  remaining_units: number;
+  period_amount: number;
+  balance_before_amount: number;
+  bill_amount: number; // + adds to the balance, - subtracts
+  remaining_amount: number;
   remaining_money: BillCycleMoney;
-  bill_amount: number | null;
-  buying_rate: number;
-  selling_rate: number;
 }
 
 export interface BillLedger {
   current: {
     period_start: string | null;
     period_end: string | null;
-    opening_units: number;
+    opening_amount: number;
     export_units: number;
     import_units: number;
     net_units: number;
     days: number;
     days_with_entries: number;
     missing_days: number;
-    balance_units: number;
+    period_amount: number;
+    balance_amount: number;
     money: BillCycleMoney;
     buying_rate: number;
     selling_rate: number;

@@ -34,6 +34,25 @@ async function signIn(req, res, next) {
   }
 }
 
+async function refresh(req, res) {
+  try {
+    const result = await authService.refreshSession(req.body && req.body.refresh_token);
+    res.json({ success: true, data: result });
+  } catch (err) {
+    res.status(err.status || 401).json({ success: false, error: err.message });
+  }
+}
+
+async function signOut(req, res) {
+  try {
+    const header = req.headers.authorization || '';
+    await authService.signOut(header.startsWith('Bearer ') ? header.slice(7).trim() : '');
+    res.json({ success: true, message: 'Signed out.' });
+  } catch (err) {
+    res.status(err.status || 500).json({ success: false, error: 'Could not sign out on the server.' });
+  }
+}
+
 async function getMe(req, res, next) {
   try {
     res.json({
@@ -48,5 +67,7 @@ async function getMe(req, res, next) {
 module.exports = {
   signUp,
   signIn,
+  refresh,
+  signOut,
   getMe
 };

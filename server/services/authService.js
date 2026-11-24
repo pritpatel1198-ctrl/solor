@@ -1,5 +1,6 @@
 const {
   supabase,
+  createAuthClient,
   dbClient,
   isDemo,
   DEMO_USER_ID,
@@ -36,7 +37,7 @@ async function signUp(email, password) {
 
   let result;
   try {
-    result = await supabase.auth.signUp({ email, password });
+    result = await createAuthClient().auth.signUp({ email, password });
   } catch (err) {
     throw authServiceUnavailable(err);
   }
@@ -67,7 +68,7 @@ async function signIn(email, password) {
 
   let result;
   try {
-    result = await supabase.auth.signInWithPassword({ email, password });
+    result = await createAuthClient().auth.signInWithPassword({ email, password });
   } catch (err) {
     throw authServiceUnavailable(err);
   }
@@ -80,7 +81,43 @@ async function signIn(email, password) {
   return data;
 }
 
+/**
+ * Exchange a refresh token for a new session. Supabase rotates refresh tokens,
+ * so the caller must store the new one from the response.
+ */
+async function refreshSession(refreshToken) {
+  if (typeof refreshToken !== 'string' || !refreshToken) {
+    throw new HttpError(400, 'Refresh token is required.');
+  }
+  if (isDemo || !supabase) throw new HttpError(400, 'Session refresh is not available in demo mode.');
+
+  let result;
+  try {
+    result = await createAuthClient().auth.refreshSession({ refresh_token: refreshToken });
+  } catch (err) {
+    throw authServiceUnavailable(err);
+  }
+
+  const { data, error } = result;
+  if (error) {
+    // A temporary outage must not look like an expired login
+    if (isNetworkOrServerError(error) || !error.status || error.status >= 500) throw authServiceUnavailable(error);
+    throw new HttpError(401, 'Your session has expired. Please sign in again.');
+  }
+  if (!data || !data.session) throw new HttpError(401, 'Your session has expired. Please sign in again.');
+  return { user: data.user, session: data.session };
+}
+
+// Revoke this device's session so its refresh token can't be used after sign-out
+async function signOut(accessToken) {
+  if (isDemo || !dbClient || !accessToken) return;
+  const { error } = await dbClient.auth.admin.signOut(accessToken, 'local');
+  if (error) console.warn('[Auth] Could not revoke session:', error.message);
+}
+
 module.exports = {
   signUp,
-  signIn
+  signIn,
+  refreshSession,
+  signOut
 };
