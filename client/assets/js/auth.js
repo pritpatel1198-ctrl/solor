@@ -19,29 +19,6 @@ const Auth = {
     }
   },
 
-  async signUp(email, password) {
-    if (!email || !email.includes('@')) {
-      throw new Error('Please enter a valid email address.');
-    }
-    if (!password || password.length < 6) {
-      throw new Error('Password must be at least 6 characters long.');
-    }
-
-    try {
-      const res = await API.signUp(email, password);
-      const token = res.data.session?.access_token;
-      // No session means Supabase requires email confirmation before the first sign-in
-      if (!token) return { ...res.data, needsConfirmation: true };
-
-      appState.setSession(res.data.session);
-      appState.setState({ user: res.data.user });
-      await this.loadSettings();
-      return res.data;
-    } catch (err) {
-      throw err;
-    }
-  },
-
   async signIn(email, password) {
     if (!email || !email.includes('@')) {
       throw new Error('Please enter a valid email address.');

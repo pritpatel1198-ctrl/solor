@@ -15,7 +15,7 @@ import { api, setAuthToken } from '../api/client';
 import { Card } from '../components/common/Card';
 import { Input } from '../components/common/Input';
 import { Button } from '../components/common/Button';
-import { SunMedium, Zap } from 'lucide-react-native';
+import { Eye, EyeOff, SunMedium, Zap } from 'lucide-react-native';
 
 interface AuthScreenProps {
   navigation: any;
@@ -26,10 +26,9 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation, onLoginSucce
   const insets = useSafeAreaInsets();
   const { colors, isDark } = useTheme();
 
-  const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async () => {
@@ -41,24 +40,14 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation, onLoginSucce
       Alert.alert('Validation Error', 'Password must be at least 6 characters');
       return;
     }
-    if (isSignUp && password !== confirmPassword) {
-      Alert.alert('Validation Error', 'Passwords do not match');
-      return;
-    }
 
     try {
       setLoading(true);
-      if (isSignUp) {
-        await api.signUp(email, password);
-        Alert.alert('Account Created', 'You can now sign in!');
-        setIsSignUp(false);
+      await api.login(email, password);
+      if (onLoginSuccess) {
+        onLoginSuccess();
       } else {
-        await api.login(email, password);
-        if (onLoginSuccess) {
-          onLoginSuccess();
-        } else {
-          navigation.replace('MainTabs');
-        }
+        navigation.replace('MainTabs');
       }
     } catch (err: any) {
       Alert.alert('Authentication Failed', err.message || 'Check your credentials');
@@ -143,12 +132,10 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation, onLoginSucce
         {/* AUTH CARD */}
         <Card style={{ padding: spacing.lg, marginBottom: spacing.lg, borderRadius: 24 }}>
           <Text style={[typography.title, { color: colors.textPrimary, fontSize: 18, marginBottom: 4 }]}>
-            {isSignUp ? 'Create Solar Account' : 'Sign In'}
+            Sign In
           </Text>
           <Text style={[typography.caption, { color: colors.textMuted, marginBottom: spacing.lg }]}>
-            {isSignUp
-              ? 'Start tracking export generation and net energy cashflow'
-              : 'Enter your account details to access your live portal'}
+            Enter your account details to access your live portal
           </Text>
 
           <Input
@@ -164,22 +151,31 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation, onLoginSucce
             label="Password"
             value={password}
             onChangeText={setPassword}
-            secureTextEntry
+            secureTextEntry={!showPassword}
+            autoCapitalize="none"
+            autoCorrect={false}
+            textContentType="password"
             placeholder="••••••••"
+            rightElement={
+              <TouchableOpacity
+                onPress={() => setShowPassword((v) => !v)}
+                accessibilityRole="button"
+                accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
+                accessibilityState={{ selected: showPassword }}
+                hitSlop={8}
+                style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}
+              >
+                {showPassword ? (
+                  <EyeOff size={20} color={colors.textSecondary} strokeWidth={2} />
+                ) : (
+                  <Eye size={20} color={colors.textSecondary} strokeWidth={2} />
+                )}
+              </TouchableOpacity>
+            }
           />
 
-          {isSignUp && (
-            <Input
-              label="Confirm Password"
-              value={confirmPassword}
-              onChangeText={setConfirmPassword}
-              secureTextEntry
-              placeholder="••••••••"
-            />
-          )}
-
           <Button
-            title={isSignUp ? 'Create Account' : 'Sign In'}
+            title="Sign In"
             onPress={handleSubmit}
             variant="primary"
             size="lg"
@@ -187,18 +183,6 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation, onLoginSucce
             style={{ marginTop: spacing.xs, borderRadius: 28 }}
           />
 
-          <TouchableOpacity
-            onPress={() => setIsSignUp((prev) => !prev)}
-            activeOpacity={0.7}
-            style={{ marginTop: spacing.md, alignItems: 'center' }}
-          >
-            <Text style={[typography.caption, { color: colors.textSecondary }]}>
-              {isSignUp ? 'Already registered? ' : "New installation? "}
-              <Text style={{ color: isDark ? colors.accent : colors.primary600, fontWeight: '700' }}>
-                {isSignUp ? 'Sign In' : 'Create Account'}
-              </Text>
-            </Text>
-          </TouchableOpacity>
         </Card>
 
         {/* QUICK DEMO ACCESS PILL: development builds only (works only against a server without Supabase configured) */}

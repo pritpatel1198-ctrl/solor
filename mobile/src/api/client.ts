@@ -100,7 +100,7 @@ interface RequestOptions extends RequestInit {
 }
 
 async function request<T>(endpoint: string, options: RequestOptions = {}, isRetry = false): Promise<T> {
-  const isAuthEndpoint = endpoint.startsWith('/auth/login') || endpoint.startsWith('/auth/signup');
+  const isAuthEndpoint = endpoint.startsWith('/auth/login');
   const isLogout = endpoint.startsWith('/auth/logout');
 
   // Renew shortly before the access token expires
@@ -178,17 +178,6 @@ export const api = {
 
   async login(email: string, password: string): Promise<{ user: AuthUser; session?: AuthSession }> {
     const res = await request<any>('/auth/login', {
-      method: 'POST',
-      body: JSON.stringify({ email, password }),
-    });
-    if (res.session?.access_token) {
-      setSession(res.session);
-    }
-    return res;
-  },
-
-  async signUp(email: string, password: string): Promise<{ user: AuthUser; session?: AuthSession }> {
-    const res = await request<any>('/auth/signup', {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     });

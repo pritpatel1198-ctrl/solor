@@ -71,7 +71,7 @@ const API = {
   },
 
   async request(endpoint, options = {}, isRetry = false) {
-    const isPublic = ['/config', '/auth/login', '/auth/signup', '/auth/refresh'].some(p => endpoint.startsWith(p));
+    const isPublic = ['/config', '/auth/login', '/auth/refresh'].some(p => endpoint.startsWith(p));
     const isLogout = endpoint.startsWith('/auth/logout');
     const expiredMessage = 'Your session has expired. Please sign in again.';
     const fail = (message, status) => Object.assign(new Error(message), { status });
@@ -152,13 +152,6 @@ const API = {
 
   login(email, password) {
     return this.request('/auth/login', {
-      method: 'POST',
-      body: JSON.stringify({ email, password })
-    });
-  },
-
-  signUp(email, password) {
-    return this.request('/auth/signup', {
       method: 'POST',
       body: JSON.stringify({ email, password })
     });

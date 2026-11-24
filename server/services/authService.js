@@ -31,37 +31,6 @@ function authServiceUnavailable(err) {
   return new HttpError(503, 'Authentication service is temporarily unavailable. Please try again.');
 }
 
-async function signUp(email, password) {
-  validateCredentials(email, password);
-  if (isDemo || !supabase) return demoSession(email);
-
-  let result;
-  try {
-    result = await createAuthClient().auth.signUp({ email, password });
-  } catch (err) {
-    throw authServiceUnavailable(err);
-  }
-
-  const { data, error } = result;
-  if (error) {
-    if (isNetworkOrServerError(error)) throw authServiceUnavailable(error);
-    throw new HttpError(400, error.message);
-  }
-
-  if (data.user) {
-    const { error: settingsError } = await dbClient.from('user_settings').upsert({
-      user_id: data.user.id,
-      default_buying_rate: 2.25,
-      default_selling_rate: 2.25,
-      currency: '₹',
-      theme: 'light'
-    });
-    // Not fatal: settings are created on first GET /settings as well.
-    if (settingsError) console.warn('[Auth] Could not create default settings:', settingsError.message);
-  }
-  return data;
-}
-
 async function signIn(email, password) {
   validateCredentials(email, password);
   if (isDemo || !supabase) return demoSession(email);
@@ -116,7 +85,6 @@ async function signOut(accessToken) {
 }
 
 module.exports = {
-  signUp,
   signIn,
   refreshSession,
   signOut

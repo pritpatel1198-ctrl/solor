@@ -1,22 +1,5 @@
 const authService = require('../services/authService');
 
-async function signUp(req, res, next) {
-  try {
-    const { email, password } = req.body;
-    const result = await authService.signUp(email, password);
-    res.status(201).json({
-      success: true,
-      message: 'Account created successfully.',
-      data: result
-    });
-  } catch (err) {
-    res.status(err.status || 400).json({
-      success: false,
-      error: err.message
-    });
-  }
-}
-
 async function signIn(req, res, next) {
   try {
     const { email, password } = req.body;
@@ -65,7 +48,6 @@ async function getMe(req, res, next) {
 }
 
 module.exports = {
-  signUp,
   signIn,
   refresh,
   signOut,
